@@ -17,7 +17,16 @@ public class PlayerMovement : NetworkBehaviour
         if (TimeManager != null)
             TimeManager.OnTick += OnTick;
     }
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
 
+        if (!IsOwner)
+            return;
+
+        CameraFollow cam = Camera.main.GetComponent<CameraFollow>();
+        cam.SetTarget(transform);
+    }
     private void OnDisable()
     {
         if (TimeManager != null)
