@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 3952505803941611437}
   - component: {fileID: 15941692121195307}
   - component: {fileID: 3544274043459947163}
+  - component: {fileID: 8895527326450532201}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -137,7 +138,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: -8584338765447262664
+  _initializedTimestamp: -8584338123833157949
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
   _predictionType: 0
@@ -207,3 +208,22 @@ MonoBehaviour:
     X: 0
     Y: 0
     Z: 0
+--- !u!114 &8895527326450532201
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3169749352011839659}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3fdaae44044276a49a52229c1597e33b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _updateOrder: 0
+  _timingType: 0
+  _allowTickDropping: 1
+  _maximumFrameTicks: 3
+  _tickRate: 30
+  _pingInterval: 1
+  _physicsMode: 0

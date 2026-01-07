@@ -1,13 +1,17 @@
 ﻿using FishNet.Object;
+using System.Collections;
 using FishNet.Managing.Timing;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using FishNet.Object.Synchronizing;
 
 public class PlayerMovement : NetworkBehaviour
 {
     [SerializeField]
     private float moveSpeed = 5f;
 
+    private readonly SyncVar<bool> isReady = new SyncVar<bool>();
+    public bool IsReady => isReady.Value;
     private Vector2 _input;
 
     public override void OnStartNetwork()
@@ -33,14 +37,13 @@ public class PlayerMovement : NetworkBehaviour
             TimeManager.OnTick -= OnTick;
     }
 
-    /* ==============================
-     * Client: read input (Owner only)
-     * ============================== */
     private void OnTick()
     {
         if (!IsOwner)
             return;
 
+        if (!isReady.Value)
+            return;
         ReadInput();
 
         if (_input != Vector2.zero)
@@ -63,9 +66,6 @@ public class PlayerMovement : NetworkBehaviour
         _input = new Vector2(x, y).normalized;
     }
 
-    /* ==============================
-     * Server: apply movement
-     * ============================== */
     [ServerRpc]
     private void MoveServerRpc(Vector2 input)
     {
@@ -79,4 +79,24 @@ public class PlayerMovement : NetworkBehaviour
 
         transform.position += movement;
     }
+    #region ReadyStateHandling
+    [ServerRpc]
+    public void SetReadyStateServerRpc(string name)
+    {
+        isReady.Value = !isReady.Value;
+
+        if (transform.position.x < 0)
+        {
+            OwnNetworkGameManager.Instance.Player1.Value = name;
+        }
+        else
+        {
+            OwnNetworkGameManager.Instance.Player2.Value = name;
+        }
+
+        OwnNetworkGameManager.Instance.DisableNameField(Owner, isReady.Value);
+        OwnNetworkGameManager.Instance.CheckAndStartGame();
+    }
+
+    #endregion
 }
