@@ -38,9 +38,6 @@ public class PlayerMovement : NetworkBehaviour
         CameraFollow cam = Camera.main.GetComponent<CameraFollow>();
         if (cam != null)
             cam.SetTarget(transform);
-
-        //moveAction.Enable();
- 
     }
 
     private void OnDisable()
@@ -60,7 +57,8 @@ public class PlayerMovement : NetworkBehaviour
         if (!IsOwner)
             return;
 
-        if (!isReady.Value)
+        // Nur bewegen wenn das Spiel gestartet ist
+        if (OwnNetworkGameManager.Instance.CurrentState != GameState.Playing)
             return;
 
         ReadInput();
@@ -98,22 +96,36 @@ public class PlayerMovement : NetworkBehaviour
 
     #region Ready State Handling
 
-    [ServerRpc]
+    [ServerRpc(RequireOwnership = true)]
     public void SetReadyStateServerRpc(string name)
     {
+        // Toggle Ready Status
         isReady.Value = !isReady.Value;
 
-        if (transform.position.x < 0)
-            OwnNetworkGameManager.Instance.Player1.Value = name;
+        // Wenn der Spieler Ready wird, Namen zuweisen
+        if (isReady.Value)
+        {
+            OwnNetworkGameManager.Instance.AssignPlayerName(name);
+            // Zeige dem Spieler seinen Namen in der Lobby
+            OwnNetworkGameManager.Instance.ShowPlayerNameReady(Owner, name);
+        }
         else
-            OwnNetworkGameManager.Instance.Player2.Value = name;
+        {
+            // Wenn Cancel gedrückt wird, verstecke den Namen wieder
+            OwnNetworkGameManager.Instance.ShowPlayerNameReady(Owner, "");
+        }
 
+        // Namefeld für diesen Client deaktivieren/aktivieren
         OwnNetworkGameManager.Instance.DisableNameField(Owner, isReady.Value);
+
+        // Prüfe ob das Spiel starten kann
         OwnNetworkGameManager.Instance.CheckAndStartGame();
     }
+
     public void StartGame()
     {
         moveAction.Enable();
     }
+
     #endregion
 }
