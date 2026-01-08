@@ -36,6 +36,8 @@ public class OwnNetworkGameManager : NetworkBehaviour
         else Destroy(gameObject);
 
         gameState.OnChange += OnStateChanged;
+        countdown.OnChange += OnCountdownChanged; // Timer-Update für alle Clients
+
         Player1.OnChange += (oldVal, newVal, asServer) =>
         {
             if (player1NameText != null)
@@ -49,12 +51,13 @@ public class OwnNetworkGameManager : NetworkBehaviour
         gameState.Value = GameState.WaitingForPlayers;
     }
 
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+        UpdateStateText(); // Initiale UI-Aktualisierung für Clients
+    }
 
     [Server]
-
-    #region State-Handling
-
-
     public void CheckAndStartGame()
     {
         if (CurrentState != GameState.WaitingForPlayers) return;
@@ -66,6 +69,7 @@ public class OwnNetworkGameManager : NetworkBehaviour
             StartCoroutine(SwitchToStartingGame());
         }
     }
+
     public void SetPlayerReady()
     {
         foreach (var player in FindObjectsByType<PlayerMovement>(FindObjectsSortMode.None))
@@ -74,23 +78,30 @@ public class OwnNetworkGameManager : NetworkBehaviour
             {
                 if (!player.IsReady)
                     ReadyButton.image.color = Color.green;
-
                 else
                     ReadyButton.image.color = Color.white;
+
                 player.SetReadyStateServerRpc(PlayerNameField.text);
             }
         }
     }
-
 
     [TargetRpc]
     public void DisableNameField(NetworkConnection con, bool isOff)
     {
         PlayerNameField.gameObject.SetActive(!isOff);
     }
+
+    #region State-Handling
+
     private void OnStateChanged(GameState oldState, GameState newState, bool asServer)
     {
         UpdateStateText();
+    }
+
+    private void OnCountdownChanged(float oldVal, float newVal, bool asServer)
+    {
+        UpdateStateText(); // UI aktualisieren wenn Countdown sich ändert
     }
 
     private void UpdateStateText()
@@ -106,13 +117,20 @@ public class OwnNetworkGameManager : NetworkBehaviour
                 stateText.text = "Finished";
                 break;
             case GameState.StartingGame:
-                stateText.text = countdown.Value > 0
-                    ? countdown.Value.ToString()
-                    : "GO!";
+                if (countdown.Value > 0)
+                {
+                    stateText.text = Mathf.Ceil(countdown.Value).ToString(); // Ganze Zahlen anzeigen
+                }
+                else
+                {
+                    stateText.text = "GO!";
+                }
                 break;
         }
     }
+
     #endregion
+
     private IEnumerator SwitchToStartingGame()
     {
         yield return null; // 1 Frame warten
@@ -120,16 +138,22 @@ public class OwnNetworkGameManager : NetworkBehaviour
         gameState.Value = GameState.StartingGame;
         StartCoroutine(StartGameCountdown());
     }
+
+    [Server]
     public IEnumerator StartGameCountdown()
     {
-        countdown.Value = 3;
+        countdown.Value = 3f;
 
         while (countdown.Value > 0)
         {
             yield return new WaitForSeconds(1f);
-            countdown.Value--;
+            countdown.Value = Mathf.Max(0, countdown.Value - 1f);
         }
+
+        gameState.Value = GameState.Playing;
+
         HideStartCanvasClientRpc();
+        EnablePlayerMovementClientRpc();
     }
 
     [ObserversRpc]
@@ -137,6 +161,18 @@ public class OwnNetworkGameManager : NetworkBehaviour
     {
         if (StartCanvas != null)
             StartCanvas.gameObject.SetActive(false);
+    }
+
+    [ObserversRpc] // Changed to ObserversRpc to reach all clients
+    private void EnablePlayerMovementClientRpc()
+    {
+        foreach (var player in FindObjectsByType<PlayerMovement>(FindObjectsSortMode.None))
+        {
+            if (player.IsOwner) // Only enable for the owner
+            {
+                player.StartGame();
+            }
+        }
     }
 }
 
@@ -146,5 +182,6 @@ public enum GameState
 {
     WaitingForPlayers,
     StartingGame,
-    FoundPlayers
+    FoundPlayers,
+    Playing
 }

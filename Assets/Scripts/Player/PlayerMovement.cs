@@ -1,18 +1,23 @@
 ﻿using FishNet.Object;
-using System.Collections;
 using FishNet.Managing.Timing;
+using FishNet.Object.Synchronizing;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using FishNet.Object.Synchronizing;
 
 public class PlayerMovement : NetworkBehaviour
 {
-    [SerializeField]
-    private float moveSpeed = 5f;
+    [Header("Movement")]
+    [SerializeField] private float moveSpeed = 5f;
+
+    [Header("Input System")]
+    [SerializeField] public InputAction moveAction;
 
     private readonly SyncVar<bool> isReady = new SyncVar<bool>();
     public bool IsReady => isReady.Value;
-    private Vector2 _input;
+
+    private Vector2 input;
+
+    #region Lifecycle
 
     public override void OnStartNetwork()
     {
@@ -21,6 +26,7 @@ public class PlayerMovement : NetworkBehaviour
         if (TimeManager != null)
             TimeManager.OnTick += OnTick;
     }
+
     public override void OnStartClient()
     {
         base.OnStartClient();
@@ -28,14 +34,26 @@ public class PlayerMovement : NetworkBehaviour
         if (!IsOwner)
             return;
 
+        // Kamera nur lokal setzen
         CameraFollow cam = Camera.main.GetComponent<CameraFollow>();
-        cam.SetTarget(transform);
+        if (cam != null)
+            cam.SetTarget(transform);
+
+        //moveAction.Enable();
+ 
     }
+
     private void OnDisable()
     {
+        moveAction.Disable();
+
         if (TimeManager != null)
             TimeManager.OnTick -= OnTick;
     }
+
+    #endregion
+
+    #region Tick / Input
 
     private void OnTick()
     {
@@ -44,27 +62,23 @@ public class PlayerMovement : NetworkBehaviour
 
         if (!isReady.Value)
             return;
+
         ReadInput();
 
-        if (_input != Vector2.zero)
-            MoveServerRpc(_input);
+        if (input != Vector2.zero)
+            MoveServerRpc(input);
     }
 
     private void ReadInput()
     {
-        if (Keyboard.current == null)
-            return;
-
-        float x = 0f;
-        float y = 0f;
-
-        if (Keyboard.current.aKey.isPressed) x -= 1f;
-        if (Keyboard.current.dKey.isPressed) x += 1f;
-        if (Keyboard.current.sKey.isPressed) y -= 1f;
-        if (Keyboard.current.wKey.isPressed) y += 1f;
-
-        _input = new Vector2(x, y).normalized;
+        input = moveAction.ReadValue<Vector2>();
+        if (input.sqrMagnitude > 1f)
+            input.Normalize();
     }
+
+    #endregion
+
+    #region Movement (Server authoritative)
 
     [ServerRpc]
     private void MoveServerRpc(Vector2 input)
@@ -79,24 +93,27 @@ public class PlayerMovement : NetworkBehaviour
 
         transform.position += movement;
     }
-    #region ReadyStateHandling
+
+    #endregion
+
+    #region Ready State Handling
+
     [ServerRpc]
     public void SetReadyStateServerRpc(string name)
     {
         isReady.Value = !isReady.Value;
 
         if (transform.position.x < 0)
-        {
             OwnNetworkGameManager.Instance.Player1.Value = name;
-        }
         else
-        {
             OwnNetworkGameManager.Instance.Player2.Value = name;
-        }
 
         OwnNetworkGameManager.Instance.DisableNameField(Owner, isReady.Value);
         OwnNetworkGameManager.Instance.CheckAndStartGame();
     }
-
+    public void StartGame()
+    {
+        moveAction.Enable();
+    }
     #endregion
 }
