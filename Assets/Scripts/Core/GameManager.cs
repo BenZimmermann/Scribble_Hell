@@ -17,17 +17,24 @@ public class OwnNetworkGameManager : NetworkBehaviour
     [Header("Lobby UI")]
     [SerializeField] private Canvas LobbyCanvas;
     [SerializeField] private TMP_Text stateText;
-    [SerializeField] private TMP_Text playerNameReady; // Zeigt dem Spieler seinen Namen nach Ready
+    [SerializeField] private TMP_Text playerNameReady;
     [SerializeField] private TMP_InputField PlayerNameField;
     [SerializeField] private Button ReadyButton;
 
     [Header("Ingame UI")]
     [SerializeField] private TMP_Text ingamePlayer1NameText;
     [SerializeField] private TMP_Text ingamePlayer2NameText;
+    [SerializeField] private Slider ingamePlayer1LivesSlider;
+    [SerializeField] private Slider ingamePlayer2LivesSlider;
+    [SerializeField] private int maxLives = 3;
 
     public readonly SyncVar<string> Player1 = new SyncVar<string>();
     public readonly SyncVar<string> Player2 = new SyncVar<string>();
     public readonly SyncVar<float> countdown = new SyncVar<float>();
+
+    [Header("Lives")]
+    public readonly SyncVar<int> Player1Lives = new SyncVar<int>();
+    public readonly SyncVar<int> Player2Lives = new SyncVar<int>();
 
     [Header("Game")]
     private readonly SyncVar<GameState> gameState = new SyncVar<GameState>();
@@ -42,7 +49,6 @@ public class OwnNetworkGameManager : NetworkBehaviour
         gameState.OnChange += OnStateChanged;
         countdown.OnChange += OnCountdownChanged;
 
-        // Namen für Ingame UI aktualisieren
         Player1.OnChange += (oldVal, newVal, asServer) =>
         {
             UpdateIngameNames();
@@ -52,6 +58,16 @@ public class OwnNetworkGameManager : NetworkBehaviour
         {
             UpdateIngameNames();
         };
+
+        Player1Lives.OnChange += (oldVal, newVal, asServer) =>
+        {
+            UpdateIngameLives();
+        };
+
+        Player2Lives.OnChange += (oldVal, newVal, asServer) =>
+        {
+            UpdateIngameLives();
+        };
     }
 
     public override void OnStartServer()
@@ -60,6 +76,8 @@ public class OwnNetworkGameManager : NetworkBehaviour
         gameState.Value = GameState.WaitingForPlayers;
         Player1.Value = "";
         Player2.Value = "";
+        Player1Lives.Value = maxLives;
+        Player2Lives.Value = maxLives;
     }
 
     public override void OnStartClient()
@@ -67,9 +85,9 @@ public class OwnNetworkGameManager : NetworkBehaviour
         base.OnStartClient();
         UpdateStateText();
         UpdateIngameNames();
+        UpdateIngameLives();
     }
 
-    // Aktualisiert die Namen im Spiel (für beide Spieler sichtbar)
     private void UpdateIngameNames()
     {
         if (ingamePlayer1NameText != null)
@@ -84,6 +102,21 @@ public class OwnNetworkGameManager : NetworkBehaviour
             ingamePlayer2NameText.text = string.IsNullOrEmpty(Player2.Value)
                 ? "Player 2"
                 : Player2.Value;
+        }
+    }
+
+    private void UpdateIngameLives()
+    {
+        if (ingamePlayer1LivesSlider != null)
+        {
+            ingamePlayer1LivesSlider.maxValue = maxLives;
+            ingamePlayer1LivesSlider.value = Player1Lives.Value;
+        }
+
+        if (ingamePlayer2LivesSlider != null)
+        {
+            ingamePlayer2LivesSlider.maxValue = maxLives;
+            ingamePlayer2LivesSlider.value = Player2Lives.Value;
         }
     }
 
@@ -102,7 +135,6 @@ public class OwnNetworkGameManager : NetworkBehaviour
         }
     }
 
-    // Vom UI Button aufgerufen
     public void SetPlayerReady()
     {
         var localPlayer = FindObjectsByType<PlayerMovement>(FindObjectsSortMode.None)
@@ -118,28 +150,23 @@ public class OwnNetworkGameManager : NetworkBehaviour
                 return;
             }
 
-            // Button Farbe ändern
             if (!localPlayer.IsReady)
                 ReadyButton.image.color = Color.green;
             else
                 ReadyButton.image.color = Color.white;
 
-            // Namen zum Server senden
             localPlayer.SetReadyStateServerRpc(playerName);
         }
     }
 
-    // Server weist den Namen zu (1. Client = Player1, 2. Client = Player2)
     [Server]
     public void AssignPlayerName(string name)
     {
-        // Wenn Player1 leer ist, fülle Player1
         if (string.IsNullOrEmpty(Player1.Value))
         {
             Player1.Value = name;
             Debug.Log($"Player 1 zugewiesen: {name}");
         }
-        // Sonst fülle Player2
         else if (string.IsNullOrEmpty(Player2.Value))
         {
             Player2.Value = name;
@@ -164,7 +191,6 @@ public class OwnNetworkGameManager : NetworkBehaviour
         }
     }
 
-    // Zeigt dem Spieler seinen eigenen Namen in der Lobby
     [TargetRpc]
     public void ShowPlayerNameReady(NetworkConnection con, string name)
     {
@@ -172,12 +198,10 @@ public class OwnNetworkGameManager : NetworkBehaviour
         {
             if (string.IsNullOrEmpty(name))
             {
-                // Name verstecken wenn Cancel gedrückt
                 playerNameReady.gameObject.SetActive(false);
             }
             else
             {
-                // Name anzeigen wenn Ready gedrückt
                 playerNameReady.text = $"Your Name: {name}";
                 playerNameReady.gameObject.SetActive(true);
             }
@@ -224,6 +248,8 @@ public class OwnNetworkGameManager : NetworkBehaviour
 
     #endregion
 
+    #region Game Flow
+
     private IEnumerator SwitchToStartingGame()
     {
         yield return null;
@@ -267,6 +293,52 @@ public class OwnNetworkGameManager : NetworkBehaviour
             localPlayer.StartGame();
         }
     }
+
+    #endregion
+
+    #region Lives Management
+
+    // Server reduziert Leben basierend auf Connection (wie bei Namen)
+    [Server]
+    public void LoseLife(NetworkConnection conn)
+    {
+        // Finde heraus welcher Spieler diese Connection hat
+        var player = FindObjectsByType<PlayerMovement>(FindObjectsSortMode.None)
+            .FirstOrDefault(p => p.Owner == conn);
+
+        if (player == null)
+        {
+            return;
+        }
+        int playerIndex = -1;
+
+        if (!string.IsNullOrEmpty(Player1.Value) && player.transform.position.x < 0)
+        {
+            playerIndex = 0;
+        }
+        else if (!string.IsNullOrEmpty(Player2.Value) && player.transform.position.x >= 0)
+        {
+            playerIndex = 1;
+        }
+
+        if (playerIndex == 0)
+        {
+            Player1Lives.Value = Mathf.Max(0, Player1Lives.Value - 1);
+        }
+        else if (playerIndex == 1)
+        {
+            Player2Lives.Value = Mathf.Max(0, Player2Lives.Value - 1);
+        }
+    }
+
+    [Server]
+    public void ResetLives()
+    {
+        Player1Lives.Value = maxLives;
+        Player2Lives.Value = maxLives;
+    }
+
+    #endregion
 }
 
 

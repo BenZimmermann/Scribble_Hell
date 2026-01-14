@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 845c43f0b89462b4594f535e824f3341, type: 3}
+  m_Name: BurstShot
+  m_EditorClassIdentifier: 
+  bulletName: BurstShot
+  bulletSprite: {fileID: 0}
+  bulletColor: {r: 0, g: 0, b: 0, a: 1}
+  bulletSize: {x: 0.2, y: 0.2}
+  bulletSpeed: 10
+  lifeTime: 5
+  damageToEnemies: 1
+  destroyOnHit: 1
+  piercing: 0
+  maxPierceCount: 1
+  shootPattern: 1
+  fireRate: 0.5
+  burstCount: 3
+  burstDelay: 0.1
+  burstCooldown: 1
+  spreadCount: 3
+  spreadAngle: 15
+  spreadFireRate: 0.7
+  rapidFireRate: 0.1
+  rotateWithDirection: 1
+  hasTrail: 1
+  trailColor: {r: 1, g: 1, b: 1, a: 1}
+  trailTime: 0.5
+  shootSound: {fileID: 0}
+  soundVolume: 1

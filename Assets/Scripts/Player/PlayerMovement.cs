@@ -121,10 +121,22 @@ public class PlayerMovement : NetworkBehaviour
         // Prüfe ob das Spiel starten kann
         OwnNetworkGameManager.Instance.CheckAndStartGame();
     }
-
+    [ServerRpc(RequireOwnership = true)]
+    public void TakeDamageServerRpc()
+    {
+        // Server verarbeitet den Schaden basierend auf Owner
+        OwnNetworkGameManager.Instance.LoseLife(Owner);
+    }
     public void StartGame()
     {
         moveAction.Enable();
+
+        // Starte automatisches Schießen
+        BulletSpawner bulletSpawner = GetComponent<BulletSpawner>();
+        if (bulletSpawner != null)
+        {
+            bulletSpawner.StartShooting();
+        }
     }
 
     #endregion
