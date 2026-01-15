@@ -273,6 +273,10 @@ public class OwnNetworkGameManager : NetworkBehaviour
 
         HideLobbyCanvasClientRpc();
         EnablePlayerMovementClientRpc();
+        if (WaveManager.Instance != null)
+        {
+            WaveManager.Instance.StartWaveSystem();
+        }
     }
 
     [ObserversRpc]

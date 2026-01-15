@@ -5,108 +5,140 @@ using UnityEngine;
 
 public class EnemySpawner : NetworkBehaviour
 {
-    [Header("Spawn Settings")]
+    [Header("Enemy Settings")]
     [SerializeField] private GameObject enemyPrefab;
+    [SerializeField] private List<EnemyData> enemyTypes = new();
+
+    [Header("Spawn Settings")]
+    [SerializeField] private float minSpawnDistance = 8f;
+    [SerializeField] private float maxSpawnDistance = 12f;
     [SerializeField] private float spawnInterval = 3f;
-    [SerializeField] private Transform[] spawnPoints;
     [SerializeField] private int maxEnemies = 10;
 
-    [Header("Spawn Control")]
-    [SerializeField] private bool spawnOnGameStart = true;
-
-    private List<GameObject> activeEnemies = new List<GameObject>();
+    private readonly List<GameObject> activeEnemies = new();
     private Coroutine spawnCoroutine;
+
+    private static readonly Dictionary<EnemyRarityType, float> RARITY_WEIGHTS =
+        new()
+        {
+            { EnemyRarityType.Common, 60f },
+            { EnemyRarityType.Uncommon, 25f },
+            { EnemyRarityType.Rare, 10f },
+            { EnemyRarityType.Epic, 4f },
+            { EnemyRarityType.Legendary, 1f }
+        };
 
     public override void OnStartServer()
     {
         base.OnStartServer();
-
-        if (spawnOnGameStart)
-        {
-            // Warte bis das Spiel startet
-            StartCoroutine(WaitForGameStart());
-        }
+        StartCoroutine(WaitForGameStart());
     }
 
     private IEnumerator WaitForGameStart()
     {
-        // Warte bis GameState auf Playing ist
         while (OwnNetworkGameManager.Instance == null ||
                OwnNetworkGameManager.Instance.CurrentState != GameState.Playing)
         {
             yield return new WaitForSeconds(0.5f);
         }
 
-        // Starte Spawning
         StartSpawning();
     }
 
     [Server]
-    public void StartSpawning()
+    private void StartSpawning()
     {
         if (spawnCoroutine != null)
-        {
             StopCoroutine(spawnCoroutine);
-        }
 
-        spawnCoroutine = StartCoroutine(SpawnEnemies());
-        Debug.Log("Enemy Spawning gestartet!");
+        spawnCoroutine = StartCoroutine(SpawnLoop());
     }
 
-    [Server]
-    public void StopSpawning()
-    {
-        if (spawnCoroutine != null)
-        {
-            StopCoroutine(spawnCoroutine);
-            spawnCoroutine = null;
-        }
-
-        Debug.Log("Enemy Spawning gestoppt!");
-    }
-
-    private IEnumerator SpawnEnemies()
+    private IEnumerator SpawnLoop()
     {
         while (true)
         {
-            // Entferne zerstörte Enemies aus der Liste
-            activeEnemies.RemoveAll(enemy => enemy == null);
+            activeEnemies.RemoveAll(e => e == null);
 
-            // Spawne nur wenn unter dem Maximum
             if (activeEnemies.Count < maxEnemies)
-            {
-                SpawnEnemy();
-            }
+                SpawnSingleEnemy();
 
             yield return new WaitForSeconds(spawnInterval);
         }
     }
 
+
     [Server]
-    private void SpawnEnemy()
+    public void SpawnSingleEnemy()
     {
-        // Wähle einen zufälligen Spawn Point
-        Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
+        if (enemyPrefab == null || enemyTypes.Count == 0)
+            return;
 
-        // Spawne den Enemy
-        GameObject enemy = Instantiate(enemyPrefab, spawnPoint.position, spawnPoint.rotation);
+        Vector3 spawnPosition = GetSpawnPositionNearPlayers();
+        EnemyData enemyData = GetWeightedRandomEnemy();
 
-        // Spawne das Objekt im Netzwerk (wichtig für FishNet!)
+        if (enemyData == null)
+            return;
+
+        GameObject enemy = Instantiate(enemyPrefab, spawnPosition, Quaternion.identity);
+
+        EnemyController controller = enemy.GetComponent<EnemyController>();
+        if (controller != null)
+            controller.SetEnemyData(enemyData);
+
         ServerManager.Spawn(enemy);
-
-        // Füge zur Liste hinzu
         activeEnemies.Add(enemy);
     }
+
+
+    [Server]
+    private EnemyData GetWeightedRandomEnemy()
+    {
+        float totalWeight = 0f;
+
+        foreach (EnemyData data in enemyTypes)
+        {
+            totalWeight += RARITY_WEIGHTS[data.rarity];
+        }
+
+        float roll = Random.Range(0f, totalWeight);
+        float current = 0f;
+
+        foreach (EnemyData data in enemyTypes)
+        {
+            current += RARITY_WEIGHTS[data.rarity];
+            if (roll <= current)
+                return data;
+        }
+
+        return enemyTypes[0]; // Fallback
+    }
+
+
+    [Server]
+    private Vector3 GetSpawnPositionNearPlayers()
+    {
+        var players = FindObjectsByType<PlayerMovement>(FindObjectsSortMode.None);
+
+        if (players.Length == 0)
+            return Vector3.zero;
+
+        PlayerMovement target = players[Random.Range(0, players.Length)];
+        Vector2 direction = Random.insideUnitCircle.normalized;
+        float distance = Random.Range(minSpawnDistance, maxSpawnDistance);
+
+        return target.transform.position + (Vector3)(direction * distance);
+    }
+
+    // ---------------- CLEANUP ----------------
 
     [Server]
     public void ClearAllEnemies()
     {
-        foreach (GameObject enemy in activeEnemies)
+        foreach (var enemy in activeEnemies)
         {
             if (enemy != null)
-            {
                 ServerManager.Despawn(enemy);
-            }
         }
 
         activeEnemies.Clear();
@@ -114,6 +146,7 @@ public class EnemySpawner : NetworkBehaviour
 
     private void OnDisable()
     {
-        StopSpawning();
+        if (spawnCoroutine != null)
+            StopCoroutine(spawnCoroutine);
     }
 }

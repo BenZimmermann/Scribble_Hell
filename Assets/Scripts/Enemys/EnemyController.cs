@@ -20,6 +20,15 @@ public class EnemyController : NetworkBehaviour
     //private float nextWanderTime;
     private bool isWaiting;
 
+    public void SetEnemyData(EnemyData data)
+    {
+        enemyData = data;
+
+        if (IsServerStarted)
+        {
+            InitializeEnemy();
+        }
+    }
     private void Awake()
     {
         if (rb == null) rb = GetComponent<Rigidbody2D>();
@@ -244,7 +253,10 @@ public class EnemyController : NetworkBehaviour
     [Server]
     private void Die()
     {
-        // Despawn das Enemy
+        if (WaveManager.Instance != null)
+        {
+            WaveManager.Instance.OnEnemyKilled();
+        }
         ServerManager.Despawn(gameObject);
     }
 

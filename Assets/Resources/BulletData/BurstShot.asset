@@ -15,8 +15,8 @@ MonoBehaviour:
   bulletName: BurstShot
   bulletSprite: {fileID: 0}
   bulletColor: {r: 0, g: 0, b: 0, a: 1}
-  bulletSize: {x: 0.2, y: 0.2}
-  bulletSpeed: 10
+  bulletSize: {x: 0.3, y: 0.3}
+  bulletSpeed: 5
   lifeTime: 5
   damageToEnemies: 1
   destroyOnHit: 1
@@ -24,8 +24,8 @@ MonoBehaviour:
   maxPierceCount: 1
   shootPattern: 1
   fireRate: 0.5
-  burstCount: 3
-  burstDelay: 0.1
+  burstCount: 10
+  burstDelay: 0.5
   burstCooldown: 1
   spreadCount: 3
   spreadAngle: 15

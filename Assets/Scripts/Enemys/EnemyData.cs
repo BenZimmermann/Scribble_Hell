@@ -7,6 +7,7 @@ public class EnemyData : ScriptableObject
     public string enemyName = "Enemy";
     public Sprite enemySprite;
     public Color enemyColor = Color.white;
+    public EnemyRarityType rarity = EnemyRarityType.Common;
 
     [Header("Movement")]
     public EnemyMovementType movementType = EnemyMovementType.Chase;
@@ -51,4 +52,12 @@ public enum EnemyMovementType
 {
     Stationary,  // Bewegt sich nicht
     Chase,       
+}
+public enum EnemyRarityType
+{
+    Common,
+    Uncommon,
+    Rare,
+    Epic,
+    Legendary
 }

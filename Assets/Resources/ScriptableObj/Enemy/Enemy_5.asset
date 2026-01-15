@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 366c96f29280585448c2ca0c92d8fcef, type: 3}
-  m_Name: Enemy_1
+  m_Name: Enemy_5
   m_EditorClassIdentifier: 
   enemyName: Enemy
   enemySprite: {fileID: 0}
-  enemyColor: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
-  rarity: 0
+  enemyColor: {r: 1, g: 0.8926479, b: 0, a: 1}
+  rarity: 3
   movementType: 1
-  moveSpeed: 1
+  moveSpeed: 0.5
   rotationSpeed: 5
   chaseRange: 99999
   stopAtDistance: 0
@@ -25,7 +25,7 @@ MonoBehaviour:
   damageAmount: 1
   damageCooldown: 1
   hasHealth: 1
-  maxHealth: 1
+  maxHealth: 10
   flashOnDamage: 1
   damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
   flashDuration: 0.2

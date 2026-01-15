@@ -10,6 +10,10 @@ public class BulletSpawner : NetworkBehaviour
     [SerializeField] private GameObject bulletPrefab;
     [SerializeField] private Transform firePoint;
 
+    [Header("Aim Settings")]
+    [SerializeField] private bool aimWithMouse = true;
+    [SerializeField] private Camera mainCamera;
+
     [Header("Auto Shoot Settings")]
     [SerializeField] private bool autoShootEnabled = true;
 
@@ -17,7 +21,7 @@ public class BulletSpawner : NetworkBehaviour
     [SerializeField] private AudioSource audioSource;
 
     private PlayerMovement playerMovement;
-    private Vector2 lastMoveDirection = Vector2.up; // Standard: nach oben
+    private Vector2 aimDirection = Vector2.up; // Richtung zur Maus
     private float lastShootTime = -999f;
     private bool isBurstActive = false;
     private Coroutine autoShootCoroutine;
@@ -28,6 +32,9 @@ public class BulletSpawner : NetworkBehaviour
 
         if (audioSource == null)
             audioSource = GetComponent<AudioSource>();
+
+        if (mainCamera == null)
+            mainCamera = Camera.main;
     }
 
     public override void OnStartClient()
@@ -46,17 +53,24 @@ public class BulletSpawner : NetworkBehaviour
         if (!IsOwner) return;
         if (OwnNetworkGameManager.Instance.CurrentState != GameState.Playing) return;
 
-        // Tracke die Bewegungsrichtung
-        UpdateMoveDirection();
+        // Berechne Richtung zur Maus
+        UpdateAimDirection();
     }
 
-    private void UpdateMoveDirection()
+    private void UpdateAimDirection()
     {
-        Vector2 moveInput = playerMovement.moveAction.ReadValue<Vector2>();
+        if (!aimWithMouse || mainCamera == null) return;
 
-        if (moveInput.magnitude > 0.1f)
+        // Hole Mausposition in Weltkoordinaten
+        Vector3 mouseWorldPos = mainCamera.ScreenToWorldPoint(Mouse.current.position.ReadValue());
+        mouseWorldPos.z = 0; // 2D Spiel
+
+        // Berechne Richtung vom Spieler zur Maus
+        Vector2 directionToMouse = (mouseWorldPos - transform.position).normalized;
+
+        if (directionToMouse.magnitude > 0.1f)
         {
-            lastMoveDirection = moveInput.normalized;
+            aimDirection = directionToMouse;
         }
     }
 
@@ -98,7 +112,7 @@ public class BulletSpawner : NetworkBehaviour
                 case ShootPattern.Single:
                     if (Time.time - lastShootTime >= bulletData.fireRate)
                     {
-                        ShootBulletServerRpc(lastMoveDirection);
+                        ShootBulletServerRpc(aimDirection);
                         lastShootTime = Time.time;
                     }
                     break;
@@ -121,7 +135,7 @@ public class BulletSpawner : NetworkBehaviour
                 case ShootPattern.RapidFire:
                     if (Time.time - lastShootTime >= bulletData.rapidFireRate)
                     {
-                        ShootBulletServerRpc(lastMoveDirection);
+                        ShootBulletServerRpc(aimDirection);
                         lastShootTime = Time.time;
                     }
                     break;
@@ -140,7 +154,7 @@ public class BulletSpawner : NetworkBehaviour
 
         for (int i = 0; i < bulletData.burstCount; i++)
         {
-            ShootBulletServerRpc(lastMoveDirection);
+            ShootBulletServerRpc(aimDirection);
 
             if (i < bulletData.burstCount - 1)
                 yield return new WaitForSeconds(bulletData.burstDelay);
@@ -157,7 +171,7 @@ public class BulletSpawner : NetworkBehaviour
         for (int i = 0; i < bulletData.spreadCount; i++)
         {
             float angle = startAngle + (bulletData.spreadAngle * i);
-            Vector2 direction = RotateVector(lastMoveDirection, angle);
+            Vector2 direction = RotateVector(aimDirection, angle);
             ShootBulletServerRpc(direction);
         }
     }
@@ -224,18 +238,20 @@ public class BulletSpawner : NetworkBehaviour
 
         Vector3 pos = firePoint != null ? firePoint.position : transform.position;
 
+        // Zeige Richtung zur Maus
         Gizmos.color = Color.cyan;
-        Gizmos.DrawLine(pos, pos + (Vector3)lastMoveDirection * 2f);
+        Gizmos.DrawLine(pos, pos + (Vector3)aimDirection * 2f);
 
         // Spread Visualisierung
         if (bulletData != null && bulletData.shootPattern == ShootPattern.Spread)
         {
             float startAngle = -(bulletData.spreadAngle * (bulletData.spreadCount - 1)) / 2f;
 
+            Gizmos.color = Color.yellow;
             for (int i = 0; i < bulletData.spreadCount; i++)
             {
                 float angle = startAngle + (bulletData.spreadAngle * i);
-                Vector2 direction = RotateVector(lastMoveDirection, angle);
+                Vector2 direction = RotateVector(aimDirection, angle);
                 Gizmos.DrawLine(pos, pos + (Vector3)direction * 1.5f);
             }
         }
