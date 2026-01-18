@@ -20,6 +20,10 @@ public class BulletSpawner : NetworkBehaviour
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
 
+    [Header("Upgrades")]
+    private float fireRateMultiplier = 1f;
+    private int damageMultiplier = 1;
+
     private PlayerMovement playerMovement;
     private Vector2 aimDirection = Vector2.up; // Richtung zur Maus
     private float lastShootTime = -999f;
@@ -177,6 +181,23 @@ public class BulletSpawner : NetworkBehaviour
     }
 
     #endregion
+    public void ApplyFireRateMultiplier(float multiplier)
+    {
+        fireRateMultiplier *= multiplier;
+        Debug.Log($"Fire Rate Multiplier jetzt: {fireRateMultiplier}x");
+    }
+
+    public void ApplyDamageMultiplier(int multiplier)
+    {
+        damageMultiplier *= multiplier;
+        Debug.Log($"Damage Multiplier jetzt: {damageMultiplier}x");
+    }
+
+    public void ChangeBulletData(BulletData newBulletData)
+    {
+        bulletData = newBulletData;
+        Debug.Log($"Waffe geändert zu: {bulletData.bulletName}");
+    }
 
     [ServerRpc]
     private void ShootBulletServerRpc(Vector2 direction)

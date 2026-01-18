@@ -8,6 +8,7 @@ public class PlayerMovement : NetworkBehaviour
 {
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 5f;
+    private float moveSpeedMultiplier = 1f; // Für Upgrades
 
     [Header("Input System")]
     [SerializeField] public InputAction moveAction;
@@ -16,7 +17,11 @@ public class PlayerMovement : NetworkBehaviour
     public bool IsReady => isReady.Value;
 
     private Vector2 input;
-
+    public void ApplyMoveSpeedMultiplier(float multiplier)
+    {
+        moveSpeedMultiplier *= multiplier;
+        Debug.Log($"Move Speed Multiplier jetzt: {moveSpeedMultiplier}x");
+    }
     #region Lifecycle
 
     public override void OnStartNetwork()

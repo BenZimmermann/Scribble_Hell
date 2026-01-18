@@ -23,8 +23,9 @@ public class WaveManager : NetworkBehaviour
 
     // Sync Variables
     private readonly SyncVar<int> currentWave = new SyncVar<int>();
-    private readonly SyncVar<int> remainingEnemies = new SyncVar<int>();
+    private readonly SyncVar<int> enemiesKilled = new SyncVar<int>();
     private readonly SyncVar<int> totalEnemiesThisWave = new SyncVar<int>();
+    private readonly SyncVar<bool> isWaveActive = new SyncVar<bool>();
 
     private void Awake()
     {
@@ -33,8 +34,9 @@ public class WaveManager : NetworkBehaviour
 
         // Callbacks für UI Updates
         currentWave.OnChange += (oldVal, newVal, asServer) => UpdateWaveUI();
-        remainingEnemies.OnChange += (oldVal, newVal, asServer) => UpdateProgressBar();
+        enemiesKilled.OnChange += (oldVal, newVal, asServer) => UpdateProgressBar();
         totalEnemiesThisWave.OnChange += (oldVal, newVal, asServer) => UpdateProgressBar();
+        isWaveActive.OnChange += (oldVal, newVal, asServer) => UpdateWaveUI();
     }
 
     public override void OnStartServer()
@@ -42,8 +44,9 @@ public class WaveManager : NetworkBehaviour
         base.OnStartServer();
 
         currentWave.Value = 0;
-        remainingEnemies.Value = 0;
+        enemiesKilled.Value = 0;
         totalEnemiesThisWave.Value = 0;
+        isWaveActive.Value = false;
     }
 
     public override void OnStartClient()
@@ -73,13 +76,16 @@ public class WaveManager : NetworkBehaviour
         {
             // Starte neue Wave
             currentWave.Value++;
+            enemiesKilled.Value = 0;
 
             // Berechne Anzahl Enemies für diese Wave
             totalEnemiesThisWave.Value = startEnemyCount + ((currentWave.Value - 1) * enemyIncreasePerWave);
-            remainingEnemies.Value = totalEnemiesThisWave.Value;
 
-            //Debug.Log($"=== Wave {currentWave.Value} gestartet! ===");
-            //Debug.Log($"Enemies: {totalEnemiesThisWave.Value}");
+            Debug.Log($"=== Wave {currentWave.Value} gestartet! ===");
+            Debug.Log($"Enemies: {totalEnemiesThisWave.Value}");
+
+            // Wave ist jetzt AKTIV - Enemies können spawnen
+            isWaveActive.Value = true;
 
             // Spawne alle Enemies dieser Wave nacheinander
             for (int i = 0; i < totalEnemiesThisWave.Value; i++)
@@ -90,14 +96,19 @@ public class WaveManager : NetworkBehaviour
                 yield return new WaitForSeconds(timeBetweenSpawns);
             }
 
-           // Debug.Log($"Alle Enemies gespawned für Wave {currentWave.Value}!");
+            Debug.Log($"Alle {totalEnemiesThisWave.Value} Enemies gespawned für Wave {currentWave.Value}!");
 
-            // Warte bis alle Enemies tot sind (Bar leer)
-            yield return new WaitUntil(() => remainingEnemies.Value <= 0);
+            // Warte bis alle Enemies getötet wurden
+            yield return new WaitUntil(() => enemiesKilled.Value >= totalEnemiesThisWave.Value);
 
-            //Debug.Log($"=== Wave {currentWave.Value} abgeschlossen! ===");
+            // Wave BEENDET - Keine Enemies mehr spawnen
+            isWaveActive.Value = false;
 
-            // Nächste Wave startet sofort (keine Pause)
+            Debug.Log($"=== Wave {currentWave.Value} abgeschlossen! ===");
+            Debug.Log($"Alle {totalEnemiesThisWave.Value} Enemies getötet!");
+
+            // Kurze Pause, dann nächste Wave
+            yield return new WaitForSeconds(1f);
         }
     }
 
@@ -105,10 +116,23 @@ public class WaveManager : NetworkBehaviour
     [Server]
     public void OnEnemyKilled()
     {
-        remainingEnemies.Value--;
-        remainingEnemies.Value = Mathf.Max(0, remainingEnemies.Value); // Nie unter 0
+        // Nur zählen wenn Wave aktiv ist
+        if (!isWaveActive.Value)
+        {
+            Debug.LogWarning("Enemy getötet, aber keine Wave aktiv!");
+            return;
+        }
 
-        //Debug.Log($"Enemy getötet! Verbleibend: {remainingEnemies.Value}/{totalEnemiesThisWave.Value}");
+        enemiesKilled.Value++;
+
+        // Verhindere Überschreitung
+        if (enemiesKilled.Value > totalEnemiesThisWave.Value)
+        {
+            enemiesKilled.Value = totalEnemiesThisWave.Value;
+        }
+
+        int remaining = totalEnemiesThisWave.Value - enemiesKilled.Value;
+        Debug.Log($"Enemy getötet! Fortschritt: {enemiesKilled.Value}/{totalEnemiesThisWave.Value} (noch {remaining} übrig)");
     }
 
     #region UI Updates
@@ -117,7 +141,14 @@ public class WaveManager : NetworkBehaviour
     {
         if (waveText != null)
         {
-            waveText.text = $"Welle {currentWave.Value}";
+            if (isWaveActive.Value)
+            {
+                waveText.text = $"Welle {currentWave.Value}";
+            }
+            else
+            {
+                waveText.text = $"Welle {currentWave.Value} - Vorbereitung...";
+            }
         }
     }
 
@@ -125,8 +156,9 @@ public class WaveManager : NetworkBehaviour
     {
         if (waveProgressSlider != null && totalEnemiesThisWave.Value > 0)
         {
-            // Slider ist VOLL am Anfang, geht runter wenn Enemies getötet werden
-            float progress = (float)remainingEnemies.Value / totalEnemiesThisWave.Value;
+            // Slider startet VOLL (100%) und geht RUNTER wenn Enemies getötet werden
+            int remainingEnemies = totalEnemiesThisWave.Value - enemiesKilled.Value;
+            float progress = (float)remainingEnemies / totalEnemiesThisWave.Value;
 
             waveProgressSlider.maxValue = 1f;
             waveProgressSlider.value = progress;
@@ -137,6 +169,7 @@ public class WaveManager : NetworkBehaviour
 
     // Public Getter
     public int CurrentWave => currentWave.Value;
-    public int RemainingEnemies => remainingEnemies.Value;
+    public int EnemiesKilled => enemiesKilled.Value;
     public int TotalEnemiesThisWave => totalEnemiesThisWave.Value;
+    public bool IsWaveActive => isWaveActive.Value;
 }

@@ -9,7 +9,7 @@ public class Bullet : NetworkBehaviour
     private BulletData bulletData;
     private readonly SyncVar<Vector2> syncDirection = new SyncVar<Vector2>();
     private readonly SyncVar<float> syncSpeed = new SyncVar<float>();
-
+    private readonly SyncVar<int> syncDamage = new SyncVar<int>(); // Für Damage Multiplier
     private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;
     private TrailRenderer trailRenderer;
