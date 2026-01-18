@@ -202,6 +202,7 @@ public class EnemyController : NetworkBehaviour
             return;
 
         PlayerMovement player = collision.gameObject.GetComponent<PlayerMovement>();
+
         if (player != null && player.IsOwner)
         {
             lastDamageTime = Time.time;
@@ -212,10 +213,14 @@ public class EnemyController : NetworkBehaviour
                 FlashDamageClientRpc();
             }
         }
+        if (collision.gameObject.GetComponent<PlayerMovement>())
+            { 
+            Die();
+            }
     }
 
     [ObserversRpc]
-    private void FlashDamageClientRpc()
+    public void FlashDamageClientRpc()
     {
         if (spriteRenderer != null)
         {
@@ -227,7 +232,7 @@ public class EnemyController : NetworkBehaviour
     {
         Color originalColor = spriteRenderer.color;
         spriteRenderer.color = enemyData.damageFlashColor;
-
+        Debug.Log("Enemy flash color applied.");
         yield return new WaitForSeconds(enemyData.flashDuration);
 
         spriteRenderer.color = originalColor;
@@ -235,7 +240,7 @@ public class EnemyController : NetworkBehaviour
 
     #endregion
 
-    #region Health System (Optional)
+    #region Health System
 
     [Server]
     public void TakeDamage(int damage)

@@ -31,41 +31,41 @@ public class EnemySpawner : NetworkBehaviour
     public override void OnStartServer()
     {
         base.OnStartServer();
-        StartCoroutine(WaitForGameStart());
+        //StartCoroutine(WaitForGameStart());
     }
 
-    private IEnumerator WaitForGameStart()
-    {
-        while (OwnNetworkGameManager.Instance == null ||
-               OwnNetworkGameManager.Instance.CurrentState != GameState.Playing)
-        {
-            yield return new WaitForSeconds(0.5f);
-        }
+    //private IEnumerator WaitForGameStart()
+    //{
+    //    while (OwnNetworkGameManager.Instance == null ||
+    //           OwnNetworkGameManager.Instance.CurrentState != GameState.Playing)
+    //    {
+    //        yield return new WaitForSeconds(0.5f);
+    //    }
 
-        StartSpawning();
-    }
+    //    StartSpawning();
+    //}
 
-    [Server]
-    private void StartSpawning()
-    {
-        if (spawnCoroutine != null)
-            StopCoroutine(spawnCoroutine);
+    //[Server]
+    //private void StartSpawning()
+    //{
+    //    if (spawnCoroutine != null)
+    //        StopCoroutine(spawnCoroutine);
 
-        spawnCoroutine = StartCoroutine(SpawnLoop());
-    }
+    //    spawnCoroutine = StartCoroutine(SpawnLoop());
+    //}
 
-    private IEnumerator SpawnLoop()
-    {
-        while (true)
-        {
-            activeEnemies.RemoveAll(e => e == null);
+    //private IEnumerator SpawnLoop()
+    //{
+    //    while (true)
+    //    {
+    //        activeEnemies.RemoveAll(e => e == null);
 
-            if (activeEnemies.Count < maxEnemies)
-                SpawnSingleEnemy();
+    //        if (activeEnemies.Count < maxEnemies)
+    //            SpawnSingleEnemy();
 
-            yield return new WaitForSeconds(spawnInterval);
-        }
-    }
+    //        yield return new WaitForSeconds(spawnInterval);
+    //    }
+    //}
 
 
     [Server]

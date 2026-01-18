@@ -161,7 +161,7 @@ public class Bullet : NetworkBehaviour
         if (enemy != null)
         {
             enemy.TakeDamage(bulletData.damageToEnemies);
-
+            enemy.FlashDamageClientRpc();
             // Piercing Logik
             if (bulletData.piercing)
             {

@@ -27,8 +27,8 @@ MonoBehaviour:
   hasHealth: 1
   maxHealth: 4
   flashOnDamage: 1
-  damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
-  flashDuration: 0.2
+  damageFlashColor: {r: 1, g: 1, b: 1, a: 1}
+  flashDuration: 0.35
   spawnSound: {fileID: 0}
   damageSound: {fileID: 0}
   deathSound: {fileID: 0}

@@ -36,6 +36,9 @@ public class OwnNetworkGameManager : NetworkBehaviour
     public readonly SyncVar<int> Player1Lives = new SyncVar<int>();
     public readonly SyncVar<int> Player2Lives = new SyncVar<int>();
 
+    private NetworkConnection player1Connection;
+    private NetworkConnection player2Connection;
+
     [Header("Game")]
     private readonly SyncVar<GameState> gameState = new SyncVar<GameState>();
     public GameState CurrentState => gameState.Value;
@@ -78,6 +81,8 @@ public class OwnNetworkGameManager : NetworkBehaviour
         Player2.Value = "";
         Player1Lives.Value = maxLives;
         Player2Lives.Value = maxLives;
+        player1Connection = null;
+        player2Connection = null;
     }
 
     public override void OnStartClient()
@@ -146,7 +151,6 @@ public class OwnNetworkGameManager : NetworkBehaviour
 
             if (string.IsNullOrEmpty(playerName))
             {
-                Debug.LogWarning("Bitte gib einen Namen ein!");
                 return;
             }
 
@@ -302,11 +306,9 @@ public class OwnNetworkGameManager : NetworkBehaviour
 
     #region Lives Management
 
-    // Server reduziert Leben basierend auf Connection (wie bei Namen)
     [Server]
     public void LoseLife(NetworkConnection conn)
     {
-        // Finde heraus welcher Spieler diese Connection hat
         var player = FindObjectsByType<PlayerMovement>(FindObjectsSortMode.None)
             .FirstOrDefault(p => p.Owner == conn);
 
@@ -340,6 +342,8 @@ public class OwnNetworkGameManager : NetworkBehaviour
     {
         Player1Lives.Value = maxLives;
         Player2Lives.Value = maxLives;
+        player1Connection = null;
+        player2Connection = null;
     }
 
     #endregion

@@ -1,16 +1,42 @@
-using FishNet.Object;
+﻿using FishNet.Object;
 using FishNet.Connection;
+using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Collider2D))]
+[RequireComponent(typeof(CompositeCollider2D))]
 public class BorderManager : NetworkBehaviour
 {
-    [SerializeField] GameObject outOfBounce;
+    [SerializeField] private GameObject outOfBoundsWarning;
+
+    // Merkt sich, welche Clients aktuell außerhalb sind
+    private readonly HashSet<NetworkConnection> playersOutOfBounds = new();
+
     private void Awake()
     {
-        // Sicherheit
-        GetComponent<Collider2D>().isTrigger = true;
-        outOfBounce.SetActive(false);
+        // Composite Collider Setup
+        CompositeCollider2D compositeCollider = GetComponent<CompositeCollider2D>();
+        compositeCollider.isTrigger = true;
+        compositeCollider.geometryType = CompositeCollider2D.GeometryType.Polygons;
+
+        if (outOfBoundsWarning != null)
+            outOfBoundsWarning.SetActive(false);
+    }
+
+    private void OnTriggerExit2D(Collider2D other)
+    {
+        if (!IsServerStarted)
+            return;
+
+        PlayerMovement player = other.GetComponent<PlayerMovement>();
+        if (player == null)
+            return;
+
+        NetworkConnection conn = player.Owner;
+
+        if (playersOutOfBounds.Add(conn))
+        {
+            NotifyOutOfBoundsTargetRpc(conn);
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -22,45 +48,25 @@ public class BorderManager : NetworkBehaviour
         if (player == null)
             return;
 
-        // Nur dem Owner dieses Spielers Bescheid sagen
-        NotifyOutOfBoundsTargetRpc(player.Owner);
-    }
-    private void OnTriggerStay2D(Collider2D other)
-    {
-        if (!IsServerStarted)
-            return;
+        NetworkConnection conn = player.Owner;
 
-        PlayerMovement player = other.GetComponent<PlayerMovement>();
-        if (player == null)
-            return;
-
-
-        NotifyOutOfBoundsTargetRpc(player.Owner);
-    }
-    private void OnTriggerExit2D(Collider2D other)
-    {
-        if (!IsServerStarted)
-            return;
-
-        PlayerMovement player = other.GetComponent<PlayerMovement>();
-        if (player == null)
-            return;
-
-        NotifyBackInBoundsTargetRpc(player.Owner);
+        if (playersOutOfBounds.Remove(conn))
+        {
+            NotifyBackInBoundsTargetRpc(conn);
+        }
     }
 
     [TargetRpc]
     private void NotifyOutOfBoundsTargetRpc(NetworkConnection conn)
     {
-        Debug.Log(" Du bist au�erhalb der Spielgrenze!");
-        outOfBounce.SetActive(true);
+        if (outOfBoundsWarning != null)
+            outOfBoundsWarning.SetActive(true);
     }
 
     [TargetRpc]
     private void NotifyBackInBoundsTargetRpc(NetworkConnection conn)
     {
-        outOfBounce.SetActive(false);
-        Debug.Log("Du bist wieder innerhalb der Spielgrenze.");
+        if (outOfBoundsWarning != null)
+            outOfBoundsWarning.SetActive(false);
     }
 }
-
