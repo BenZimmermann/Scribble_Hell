@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a4dab5844617b07479550d26e28d0402, type: 3}
-  m_Name: DamageDoubleUpgrade
+  m_Name: DamageDouble
   m_EditorClassIdentifier: 
-  upgradeName: Upgrade
+  upgradeName: DamageDouble
   description: Damage
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 1ab65c9c04a78d24091c80586fde7374, type: 3}
   upgradeType: 3
   moveSpeedMultiplier: 0
   weaponBulletData: {fileID: 0}
   fireRateMultiplier: 0
-  damageMultiplier: 2
+  damageMultiplier: 10

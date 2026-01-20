@@ -55,7 +55,7 @@ public class UpgradeManager : NetworkBehaviour
     public void CheckForUpgradePhase(int currentWave)
     {
         // Alle X Wellen → Upgrade Phase
-        if (currentWave > 0 && currentWave == upgradeEveryXWaves)
+        if (currentWave == 5)
         {
             StartUpgradePhase();
         }

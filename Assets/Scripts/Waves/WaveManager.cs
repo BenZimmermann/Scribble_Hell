@@ -106,7 +106,7 @@ public class WaveManager : NetworkBehaviour
 
             Debug.Log($"=== Wave {currentWave.Value} abgeschlossen! ===");
             Debug.Log($"Alle {totalEnemiesThisWave.Value} Enemies getötet!");
-
+            UpgradeManager.Instance.CheckForUpgradePhase(currentWave.Value);
             // Kurze Pause, dann nächste Wave
             yield return new WaitForSeconds(1f);
         }

@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a4dab5844617b07479550d26e28d0402, type: 3}
-  m_Name: SpreadShotUpgrade
+  m_Name: SpreadShot
   m_EditorClassIdentifier: 
-  upgradeName: Upgrade
-  description: Beschreibung des Upgrades
-  icon: {fileID: 0}
+  upgradeName: SpreadShot
+  description: SpreadShot
+  icon: {fileID: 21300000, guid: ba12892111b4c454fbdb3a5248ba4a97, type: 3}
   upgradeType: 2
   moveSpeedMultiplier: 0
   weaponBulletData: {fileID: 11400000, guid: 9146930e40abc6649aea4cdf3119ce3f, type: 2}

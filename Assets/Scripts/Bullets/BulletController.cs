@@ -10,6 +10,7 @@ public class Bullet : NetworkBehaviour
     private readonly SyncVar<Vector2> syncDirection = new SyncVar<Vector2>();
     private readonly SyncVar<float> syncSpeed = new SyncVar<float>();
     private readonly SyncVar<int> syncDamage = new SyncVar<int>(); // Für Damage Multiplier
+
     private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;
     private TrailRenderer trailRenderer;
@@ -153,15 +154,15 @@ public class Bullet : NetworkBehaviour
     [Server]
     private void OnTriggerEnter2D(Collider2D collision)
     {
-
-        //if (!IsServerStarted) return;
+        if (!IsServerStarted) return;
 
         // Prüfe auf Enemy
         EnemyController enemy = collision.GetComponent<EnemyController>();
         if (enemy != null)
         {
+            Debug.Log("Bullet hit enemy: " + enemy.name);
             enemy.TakeDamage(bulletData.damageToEnemies);
-            enemy.FlashDamageClientRpc();
+
             // Piercing Logik
             if (bulletData.piercing)
             {

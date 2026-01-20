@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a4dab5844617b07479550d26e28d0402, type: 3}
-  m_Name: MoveSpeedUpgrade
+  m_Name: BurstShot
   m_EditorClassIdentifier: 
-  upgradeName: Upgrade
-  description: Movement
-  icon: {fileID: 0}
-  upgradeType: 0
-  moveSpeedMultiplier: 1.5
-  weaponBulletData: {fileID: 0}
+  upgradeName: BurstShot
+  description: Burst
+  icon: {fileID: 21300000, guid: 029cce2e3e42a0b4d84faa5eaa7def59, type: 3}
+  upgradeType: 2
+  moveSpeedMultiplier: 0
+  weaponBulletData: {fileID: 11400000, guid: c7d54c202f344f44ba30370ea69f0b3f, type: 2}
   fireRateMultiplier: 0
   damageMultiplier: 0

@@ -40,7 +40,7 @@ public class UpgradeUI : MonoBehaviour
         currentUpgradeNames = upgradeNames;
 
         if (titleText != null)
-            titleText.text = "CHOOSE YOUR UPGRADE";
+            titleText.text = "Upgrade Time!";
 
         // Lade Upgrade Daten aus Resources und zeige an
         for (int i = 0; i < upgradeNames.Length && i < 3; i++)

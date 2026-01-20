@@ -21,8 +21,9 @@ public class BulletSpawner : NetworkBehaviour
     [SerializeField] private AudioSource audioSource;
 
     [Header("Upgrades")]
-    private float fireRateMultiplier = 1f;
+    private float fireRateMultiplier = 10f;
     private int damageMultiplier = 1;
+    private BulletData runtimeBulletData;
 
     private PlayerMovement playerMovement;
     private Vector2 aimDirection = Vector2.up; // Richtung zur Maus
@@ -39,6 +40,10 @@ public class BulletSpawner : NetworkBehaviour
 
         if (mainCamera == null)
             mainCamera = Camera.main;
+        if (bulletData != null)
+        {
+            runtimeBulletData = Instantiate(bulletData);
+        }
     }
 
     public override void OnStartClient()
@@ -183,21 +188,47 @@ public class BulletSpawner : NetworkBehaviour
     #endregion
     public void ApplyFireRateMultiplier(float multiplier)
     {
-        fireRateMultiplier *= multiplier;
-        Debug.Log($"Fire Rate Multiplier jetzt: {fireRateMultiplier}x");
-    }
+        if (runtimeBulletData == null) return;
 
+        // Modifiziere die Runtime Kopie
+        switch (runtimeBulletData.shootPattern)
+        {
+            case ShootPattern.Single:
+                runtimeBulletData.fireRate /= multiplier;
+                break;
+            case ShootPattern.Burst:
+                runtimeBulletData.burstCooldown /= multiplier;
+                break;
+            case ShootPattern.Spread:
+                runtimeBulletData.spreadFireRate /= multiplier;
+                break;
+            case ShootPattern.RapidFire:
+                runtimeBulletData.rapidFireRate /= multiplier;
+                break;
+        }
+
+        Debug.Log($"✓ Fire Rate erhöht! Neue Rate: {runtimeBulletData.fireRate}");
+    }
     public void ApplyDamageMultiplier(int multiplier)
     {
-        damageMultiplier *= multiplier;
-        Debug.Log($"Damage Multiplier jetzt: {damageMultiplier}x");
+        if (runtimeBulletData == null) return;
+
+        // Modifiziere Damage in Runtime Kopie
+        runtimeBulletData.damageToEnemies *= multiplier;
+
+        Debug.Log($"✓ Damage erhöht! Neuer Damage: {runtimeBulletData.damageToEnemies}");
     }
 
     public void ChangeBulletData(BulletData newBulletData)
     {
-        bulletData = newBulletData;
-        Debug.Log($"Waffe geändert zu: {bulletData.bulletName}");
+        if (newBulletData == null) return;
+
+        // Erstelle neue Runtime Kopie
+        runtimeBulletData = Instantiate(newBulletData);
+
+        Debug.Log($"✓ Waffe geändert zu: {runtimeBulletData.bulletName}");
     }
+
 
     [ServerRpc]
     private void ShootBulletServerRpc(Vector2 direction)

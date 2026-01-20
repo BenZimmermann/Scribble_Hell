@@ -92,7 +92,7 @@ public class PlayerMovement : NetworkBehaviour
             input.x,
             input.y,
             0f
-        ) * moveSpeed * delta;
+        ) * moveSpeed * moveSpeedMultiplier * delta;
 
         transform.position += movement;
     }

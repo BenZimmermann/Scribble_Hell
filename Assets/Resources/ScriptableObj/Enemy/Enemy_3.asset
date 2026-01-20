@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Enemy_3
   m_EditorClassIdentifier: 
   enemyName: Enemy
-  enemySprite: {fileID: 0}
-  enemyColor: {r: 0, g: 0.15520048, b: 1, a: 1}
+  enemySprite: {fileID: 21300000, guid: 714edeab986b80c4eb3011ff87a8a58e, type: 3}
+  enemyColor: {r: 1, g: 1, b: 1, a: 1}
   rarity: 2
   movementType: 1
   moveSpeed: 1
