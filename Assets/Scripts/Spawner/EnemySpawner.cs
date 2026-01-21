@@ -84,7 +84,7 @@ public class EnemySpawner : NetworkBehaviour
 
         EnemyController controller = enemy.GetComponent<EnemyController>();
         if (controller != null)
-            controller.SetEnemyData(enemyData);
+            controller.SetEnemyData(enemyData.name);
 
         ServerManager.Spawn(enemy);
         activeEnemies.Add(enemy);

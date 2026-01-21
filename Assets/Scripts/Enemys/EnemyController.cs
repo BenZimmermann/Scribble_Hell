@@ -1,4 +1,5 @@
-using FishNet.Object;
+﻿using FishNet.Object;
+using FishNet.Object.Synchronizing;
 using System.Collections;
 using UnityEngine;
 
@@ -6,7 +7,9 @@ using UnityEngine;
 public class EnemyController : NetworkBehaviour
 {
     [Header("Enemy Configuration")]
-    [SerializeField] private EnemyData enemyData;
+    [SerializeField] public EnemyData enemyData;
+    //[SerializeField] public EnemySpawner enemySpawner;
+    //private readonly SyncVar<int> enemySprite = new SyncVar<int>();
 
     [Header("Components")]
     [SerializeField] private SpriteRenderer spriteRenderer;
@@ -20,15 +23,16 @@ public class EnemyController : NetworkBehaviour
     //private float nextWanderTime;
     private bool isWaiting;
 
-    public void SetEnemyData(EnemyData data)
+    [ObserversRpc]
+    public void SetEnemyData(string EnemyDataName)
     {
-        enemyData = data;
+        enemyData = (EnemyData)Resources.Load("ScriptableObj/Enemy/" + EnemyDataName);
 
-        if (IsServerStarted)
-        {
-            InitializeEnemy();
-        }
+
+        InitializeEnemy();
+
     }
+
     private void Awake()
     {
         if (rb == null) rb = GetComponent<Rigidbody2D>();
@@ -45,8 +49,17 @@ public class EnemyController : NetworkBehaviour
     {
         base.OnStartClient();
         ApplyVisuals();
+        //enemySprite.OnChange += EnemySprite_OnChange;
     }
 
+    //private void EnemySprite_OnChange(Sprite previous, Sprite current, bool asServer)
+    //{
+    //    if (spriteRenderer != null && current != null)
+    //    {
+    //        spriteRenderer.sprite = current;
+    //    }
+    //}
+    [Server]
     private void InitializeEnemy()
     {
         currentHealth = enemyData.maxHealth;
@@ -55,14 +68,16 @@ public class EnemyController : NetworkBehaviour
         //nextWanderTime = Time.time + enemyData.wanderChangeInterval;
         currentDirection = Random.insideUnitCircle.normalized;
     }
-
+    [ObserversRpc]
     private void ApplyVisuals()
     {
         if (enemyData == null || spriteRenderer == null) return;
 
         if (enemyData.enemySprite != null)
+        {
             spriteRenderer.sprite = enemyData.enemySprite;
-
+            //enemySprite.Value = enemyData.enemySprite;
+        }
         spriteRenderer.color = enemyData.enemyColor;
     }
 
@@ -86,13 +101,13 @@ public class EnemyController : NetworkBehaviour
                 ChaseNearestPlayer();
                 break;
 
-            //case EnemyMovementType.Patrol:
-            //    PatrolMovement();
-            //    break;
+                //case EnemyMovementType.Patrol:
+                //    PatrolMovement();
+                //    break;
 
-            //case EnemyMovementType.Wander:
-            //    WanderMovement();
-            //    break;
+                //case EnemyMovementType.Wander:
+                //    WanderMovement();
+                //    break;
         }
     }
 
@@ -195,7 +210,7 @@ public class EnemyController : NetworkBehaviour
     #endregion
 
     #region Damage System
-
+    [Server]
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (Time.time - lastDamageTime < enemyData.damageCooldown)
@@ -203,20 +218,22 @@ public class EnemyController : NetworkBehaviour
 
         PlayerMovement player = collision.gameObject.GetComponent<PlayerMovement>();
 
-        if (player != null && player.IsOwner)
+        if (player != null)
         {
-            lastDamageTime = Time.time;
-            player.TakeDamageServerRpc();
 
+            lastDamageTime = Time.time;
+            Debug.Log("skibidi ZUERST " + player);
+            player.TakeDamageServerRpc();
+            Debug.Log("skibidi last " + player);
             if (IsServerStarted && enemyData.flashOnDamage)
             {
                 FlashDamageClientRpc();
             }
         }
         if (collision.gameObject.GetComponent<PlayerMovement>())
-            { 
+        {
             Die();
-            }
+        }
     }
 
     [ObserversRpc]
@@ -285,15 +302,23 @@ public class EnemyController : NetworkBehaviour
                 }
                 break;
 
-            //case EnemyMovementType.Patrol:
-            //    Vector3 center = Application.isPlaying ? patrolCenter : transform.position;
-            //    Gizmos.DrawWireSphere(center, enemyData.patrolRadius);
-            //    break;
+                //case EnemyMovementType.Patrol:
+                //    Vector3 center = Application.isPlaying ? patrolCenter : transform.position;
+                //    Gizmos.DrawWireSphere(center, enemyData.patrolRadius);
+                //    break;
 
-            //case EnemyMovementType.Wander:
-            //    Vector3 wanderCenter = Application.isPlaying ? patrolCenter : transform.position;
-            //    Gizmos.DrawWireSphere(wanderCenter, enemyData.wanderRadius);
-            //    break;
+                //case EnemyMovementType.Wander:
+                //    Vector3 wanderCenter = Application.isPlaying ? patrolCenter : transform.position;
+                //    Gizmos.DrawWireSphere(wanderCenter, enemyData.wanderRadius);
+                //    break;
         }
+    }
+    enum Sprites
+    {
+        Enemy1,
+        Enemy2,
+        Enemy3,
+        Enemy4,
+        Enemy5
     }
 }

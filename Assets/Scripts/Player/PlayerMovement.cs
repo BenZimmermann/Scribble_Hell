@@ -45,7 +45,7 @@ public class PlayerMovement : NetworkBehaviour
             cam.SetTarget(transform);
     }
 
-    private void OnDisable()
+    public void OnDisable()
     {
         moveAction.Disable();
 
@@ -110,7 +110,7 @@ public class PlayerMovement : NetworkBehaviour
         // Wenn der Spieler Ready wird, Namen zuweisen
         if (isReady.Value)
         {
-            OwnNetworkGameManager.Instance.AssignPlayerName(name);
+            OwnNetworkGameManager.Instance.AssignPlayerName( name, Owner);
             // Zeige dem Spieler seinen Namen in der Lobby
             OwnNetworkGameManager.Instance.ShowPlayerNameReady(Owner, name);
         }
@@ -126,9 +126,10 @@ public class PlayerMovement : NetworkBehaviour
         // Prüfe ob das Spiel starten kann
         OwnNetworkGameManager.Instance.CheckAndStartGame();
     }
-    [ServerRpc(RequireOwnership = true)]
+    [Server]
     public void TakeDamageServerRpc()
     {
+        Debug.Log($"ICH BIN {Owner.ClientId} UND HABE SCHADEN BEKOMMEN");
         // Server verarbeitet den Schaden basierend auf Owner
         OwnNetworkGameManager.Instance.LoseLife(Owner);
     }

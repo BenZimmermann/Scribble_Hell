@@ -9,6 +9,7 @@ using UnityEngine;
 public class UpgradeManager : NetworkBehaviour
 {
     public static UpgradeManager Instance { get; private set; }
+    public PlayerMovement playerMovement;
 
     [Header("Upgrade Settings")]
     [SerializeField] private List<UpgradeData> allUpgrades = new List<UpgradeData>();
@@ -50,12 +51,10 @@ public class UpgradeManager : NetworkBehaviour
             upgradeUICanvas.SetActive(false);
     }
 
-    // Wird vom WaveManager aufgerufen
     [Server]
     public void CheckForUpgradePhase(int currentWave)
     {
-        // Alle X Wellen → Upgrade Phase
-        if (currentWave == 5)
+        if (currentWave == 1)
         {
             StartUpgradePhase();
         }
@@ -71,10 +70,8 @@ public class UpgradeManager : NetworkBehaviour
         player1UpgradeChoice.Value = "";
         player2UpgradeChoice.Value = "";
 
-        // Wähle 3 zufällige Upgrades
         currentUpgradeOptions = GetRandomUpgrades(3);
 
-        // Sende Upgrade Optionen an alle Clients
         string[] upgradeNames = currentUpgradeOptions.Select(u => u.upgradeName).ToArray();
         ShowUpgradeUIClientRpc(upgradeNames);
     }
@@ -88,7 +85,6 @@ public class UpgradeManager : NetworkBehaviour
             return new List<UpgradeData>();
         }
 
-        // Kopiere Liste und shuffle
         List<UpgradeData> shuffled = new List<UpgradeData>(allUpgrades);
 
         for (int i = 0; i < shuffled.Count; i++)
@@ -117,11 +113,11 @@ public class UpgradeManager : NetworkBehaviour
             if (upgradeUI != null)
             {
                 upgradeUI.ShowUpgrades(upgradeNames);
+                //Time.timeScale = 0;
             }
         }
     }
 
-    // Wird von UpgradeUI Button aufgerufen
     public void SelectUpgrade(int upgradeIndex)
     {
         if (upgradeIndex < 0 || upgradeIndex >= 3)
@@ -130,13 +126,11 @@ public class UpgradeManager : NetworkBehaviour
             return;
         }
 
-        // Finde lokalen Spieler
         var localPlayer = FindObjectsByType<PlayerMovement>(FindObjectsSortMode.None)
             .FirstOrDefault(p => p.IsOwner);
 
         if (localPlayer != null)
         {
-            // Sende Auswahl zum Server
             SelectUpgradeServerRpc(upgradeIndex);
         }
     }
@@ -147,7 +141,6 @@ public class UpgradeManager : NetworkBehaviour
         if (sender == null || !isUpgradePhase.Value)
             return;
 
-        // Verhindere doppelte Auswahl
         if (playersWhoChose.Contains(sender))
         {
             Debug.LogWarning($"Player {sender.ClientId} hat bereits gewählt!");
@@ -165,7 +158,6 @@ public class UpgradeManager : NetworkBehaviour
 
         Debug.Log($" Player {sender.ClientId} wählte: {selectedUpgrade.upgradeName}");
 
-        // Speichere Auswahl
         var gameManager = OwnNetworkGameManager.Instance;
         bool isPlayer1 = sender == GetPlayer1Connection();
 
@@ -178,13 +170,8 @@ public class UpgradeManager : NetworkBehaviour
             player2UpgradeChoice.Value = selectedUpgrade.upgradeName;
         }
 
-        // Wende Upgrade an
         ApplyUpgrade(sender, selectedUpgrade);
-
-        // Verstecke UI für diesen Spieler
-        HideUpgradeUITargetRpc(sender);
-
-        // Prüfe ob beide gewählt haben
+        //HideUpgradeUITargetRpc(sender);
         CheckIfAllPlayersChose();
     }
 
@@ -205,17 +192,14 @@ public class UpgradeManager : NetworkBehaviour
     private void EndUpgradePhase()
     {
         isUpgradePhase.Value = false;
-
-        // Verstecke UI für alle (falls noch nicht)
         HideUpgradeUIClientRpc();
-
+       // Time.timeScale = 1;
         Debug.Log(" Spiel wird fortgesetzt!");
     }
 
     [Server]
     private void ApplyUpgrade(NetworkConnection conn, UpgradeData upgrade)
     {
-        // Finde Spieler mit dieser Connection
         var players = FindObjectsByType<PlayerMovement>(FindObjectsSortMode.None);
         PlayerMovement targetPlayer = null;
 
@@ -234,14 +218,12 @@ public class UpgradeManager : NetworkBehaviour
             return;
         }
 
-        // Wende Upgrade an basierend auf Typ
         ApplyUpgradeToPlayerTargetRpc(conn, upgrade.upgradeName);
     }
 
     [TargetRpc]
     private void ApplyUpgradeToPlayerTargetRpc(NetworkConnection conn, string upgradeName)
     {
-        // Lade Upgrade Data aus Resources
         UpgradeData upgrade = Resources.Load<UpgradeData>($"Upgrades/{upgradeName}");
 
         if (upgrade == null)
@@ -250,7 +232,6 @@ public class UpgradeManager : NetworkBehaviour
             return;
         }
 
-        // Finde lokalen Spieler
         var localPlayer = FindObjectsByType<PlayerMovement>(FindObjectsSortMode.None)
             .FirstOrDefault(p => p.IsOwner);
 
@@ -331,10 +312,7 @@ public class UpgradeManager : NetworkBehaviour
 
     private void OnUpgradePhaseChanged(bool oldVal, bool newVal, bool asServer)
     {
-        // Optional: Reagiere auf Upgrade Phase Status
     }
-
-    // Helper: Finde Player 1 Connection
     private NetworkConnection GetPlayer1Connection()
     {
         var gameManager = OwnNetworkGameManager.Instance;

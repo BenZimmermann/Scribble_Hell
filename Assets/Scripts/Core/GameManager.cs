@@ -41,6 +41,9 @@ public class OwnNetworkGameManager : NetworkBehaviour
 
     [Header("Game")]
     private readonly SyncVar<GameState> gameState = new SyncVar<GameState>();
+
+    [Header("GameOver")]
+    [SerializeField] private Image GameOverCanvas;
     public GameState CurrentState => gameState.Value;
 
 
@@ -83,6 +86,7 @@ public class OwnNetworkGameManager : NetworkBehaviour
         Player2Lives.Value = maxLives;
         player1Connection = null;
         player2Connection = null;
+        GameOverCanvas.gameObject.SetActive(false);
     }
 
     public override void OnStartClient()
@@ -164,16 +168,18 @@ public class OwnNetworkGameManager : NetworkBehaviour
     }
 
     [Server]
-    public void AssignPlayerName(string name)
+    public void AssignPlayerName(string name, NetworkConnection conn)
     {
         if (string.IsNullOrEmpty(Player1.Value))
         {
             Player1.Value = name;
+            player1Connection = conn;
             Debug.Log($"Player 1 zugewiesen: {name}");
         }
         else if (string.IsNullOrEmpty(Player2.Value))
         {
             Player2.Value = name;
+            player2Connection = conn;
             Debug.Log($"Player 2 zugewiesen: {name}");
         }
         else
@@ -309,34 +315,47 @@ public class OwnNetworkGameManager : NetworkBehaviour
     [Server]
     public void LoseLife(NetworkConnection conn)
     {
-        var player = FindObjectsByType<PlayerMovement>(FindObjectsSortMode.None)
-            .FirstOrDefault(p => p.Owner == conn);
-
+        if (player1Connection == null || player2Connection == null)
+        {
+            Debug.LogError($"FEHLER: Connections sind NULL! P1={player1Connection?.ClientId}, P2={player2Connection?.ClientId}");
+            return;
+        }
+        var player = conn.FirstObject.GetComponent<PlayerMovement>();
         if (player == null)
         {
             return;
         }
+        Debug.Log($"ICH BIN CONNECTION {conn.ClientId} IN GameManger.LoseLife()");
+
         int playerIndex = -1;
 
-        if (!string.IsNullOrEmpty(Player1.Value) && player.transform.position.x < 0)
+        if (!string.IsNullOrEmpty(Player1.Value) && conn == player1Connection)
         {
+            Debug.LogError("player" + conn);
             playerIndex = 0;
         }
-        else if (!string.IsNullOrEmpty(Player2.Value) && player.transform.position.x >= 0)
+        else if (!string.IsNullOrEmpty(Player2.Value) && conn == player2Connection)
         {
+            Debug.LogError("player" + conn);
             playerIndex = 1;
         }
 
         if (playerIndex == 0)
         {
+            Debug.LogError("damage player1");
             Player1Lives.Value = Mathf.Max(0, Player1Lives.Value - 1);
         }
         else if (playerIndex == 1)
         {
+            Debug.LogError("damage player2");
             Player2Lives.Value = Mathf.Max(0, Player2Lives.Value - 1);
         }
+        if (Player2Lives.Value <= 0 || Player1Lives.Value <= 0)
+        {
+            Debug.Log("SPIEL VORBEI");
+            GameOver();
+        }
     }
-
     [Server]
     public void ResetLives()
     {
@@ -345,8 +364,23 @@ public class OwnNetworkGameManager : NetworkBehaviour
         player1Connection = null;
         player2Connection = null;
     }
-
+    [ObserversRpc]
+    public void GameOver()
+    {
+        GameOverCanvas.gameObject.SetActive(true);
+        Time.timeScale = 0;
+    }
     #endregion
+    public void OnQuit()
+    {
+        //button pressed
+        Debug.Log("aowjdawiodad");
+        Application.Quit();
+    }
+    public void OnRestart()
+    {
+        
+    }
 }
 
 
