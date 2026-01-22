@@ -1,119 +1,102 @@
 using FishNet.Object;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class EnemySpawner : NetworkBehaviour
 {
-    [Header("Enemy Settings")]
-    [SerializeField] private GameObject enemyPrefab;
-    [SerializeField] private List<EnemyData> enemyTypes = new();
+    [Header("Enemy Prefabs")]
+    [SerializeField] private List<EnemyPrefabEntry> enemyPrefabs = new();
 
     [Header("Spawn Settings")]
     [SerializeField] private float minSpawnDistance = 8f;
     [SerializeField] private float maxSpawnDistance = 12f;
-    [SerializeField] private float spawnInterval = 3f;
-    [SerializeField] private int maxEnemies = 10;
 
     private readonly List<GameObject> activeEnemies = new();
-    private Coroutine spawnCoroutine;
 
-    private static readonly Dictionary<EnemyRarityType, float> RARITY_WEIGHTS =
-        new()
-        {
-            { EnemyRarityType.Common, 60f },
-            { EnemyRarityType.Uncommon, 25f },
-            { EnemyRarityType.Rare, 10f },
-            { EnemyRarityType.Epic, 4f },
-            { EnemyRarityType.Legendary, 1f }
-        };
-
-    public override void OnStartServer()
+    private static readonly Dictionary<EnemyRarityType, float> RARITY_WEIGHTS = new()
     {
-        base.OnStartServer();
-        //StartCoroutine(WaitForGameStart());
-    }
-
-    //private IEnumerator WaitForGameStart()
-    //{
-    //    while (OwnNetworkGameManager.Instance == null ||
-    //           OwnNetworkGameManager.Instance.CurrentState != GameState.Playing)
-    //    {
-    //        yield return new WaitForSeconds(0.5f);
-    //    }
-
-    //    StartSpawning();
-    //}
-
-    //[Server]
-    //private void StartSpawning()
-    //{
-    //    if (spawnCoroutine != null)
-    //        StopCoroutine(spawnCoroutine);
-
-    //    spawnCoroutine = StartCoroutine(SpawnLoop());
-    //}
-
-    //private IEnumerator SpawnLoop()
-    //{
-    //    while (true)
-    //    {
-    //        activeEnemies.RemoveAll(e => e == null);
-
-    //        if (activeEnemies.Count < maxEnemies)
-    //            SpawnSingleEnemy();
-
-    //        yield return new WaitForSeconds(spawnInterval);
-    //    }
-    //}
-
+        { EnemyRarityType.Common, 60f },
+        { EnemyRarityType.Uncommon, 25f },
+        { EnemyRarityType.Rare, 10f },
+        { EnemyRarityType.Epic, 4f },
+        { EnemyRarityType.Legendary, 1f }
+    };
 
     [Server]
     public void SpawnSingleEnemy()
     {
-        if (enemyPrefab == null || enemyTypes.Count == 0)
+        if (enemyPrefabs == null || enemyPrefabs.Count == 0)
+        {
+            Debug.LogWarning("Keine Enemy Prefabs zugewiesen!");
             return;
+        }
 
+        // Wähle gewichtetes zufälliges Enemy Prefab
+        EnemyPrefabEntry selectedEntry = GetWeightedRandomEnemy();
+
+        if (selectedEntry == null || selectedEntry.enemyPrefab == null)
+        {
+            Debug.LogWarning("Kein gültiges Enemy Prefab gefunden!");
+            return;
+        }
+
+        // Spawn Position
         Vector3 spawnPosition = GetSpawnPositionNearPlayers();
-        EnemyData enemyData = GetWeightedRandomEnemy();
 
-        if (enemyData == null)
-            return;
+        // Spawne Enemy
+        GameObject enemy = Instantiate(selectedEntry.enemyPrefab, spawnPosition, Quaternion.identity);
 
-        GameObject enemy = Instantiate(enemyPrefab, spawnPosition, Quaternion.identity);
-
-        EnemyController controller = enemy.GetComponent<EnemyController>();
-        if (controller != null)
-            controller.SetEnemyData(enemyData.name);
-
+        // Spawne im Netzwerk
         ServerManager.Spawn(enemy);
+
+        // Füge zur Liste hinzu
         activeEnemies.Add(enemy);
+
+        Debug.Log($"Enemy gespawned: {selectedEntry.enemyPrefab.name} (Rarity: {selectedEntry.rarity})");
     }
 
-
     [Server]
-    private EnemyData GetWeightedRandomEnemy()
+    private EnemyPrefabEntry GetWeightedRandomEnemy()
     {
         float totalWeight = 0f;
 
-        foreach (EnemyData data in enemyTypes)
+        // Berechne Gesamtgewicht
+        foreach (EnemyPrefabEntry entry in enemyPrefabs)
         {
-            totalWeight += RARITY_WEIGHTS[data.rarity];
+            if (entry.enemyPrefab != null)
+            {
+                totalWeight += RARITY_WEIGHTS[entry.rarity];
+            }
         }
 
-        float roll = Random.Range(0f, totalWeight);
+        if (totalWeight == 0f)
+        {
+            Debug.LogWarning("Gesamtgewicht ist 0!");
+            return null;
+        }
+
+        // Zufallsauswahl basierend auf Gewicht
+        float roll = UnityEngine.Random.Range(0f, totalWeight);
         float current = 0f;
 
-        foreach (EnemyData data in enemyTypes)
+        foreach (EnemyPrefabEntry entry in enemyPrefabs)
         {
-            current += RARITY_WEIGHTS[data.rarity];
+            if (entry.enemyPrefab == null)
+                continue;
+
+            current += RARITY_WEIGHTS[entry.rarity];
+
             if (roll <= current)
-                return data;
+            {
+                return entry;
+            }
         }
 
-        return enemyTypes[0]; // Fallback
+        // Fallback: Erstes gültiges Prefab
+        return enemyPrefabs.Find(e => e.enemyPrefab != null);
     }
-
 
     [Server]
     private Vector3 GetSpawnPositionNearPlayers()
@@ -123,14 +106,15 @@ public class EnemySpawner : NetworkBehaviour
         if (players.Length == 0)
             return Vector3.zero;
 
-        PlayerMovement target = players[Random.Range(0, players.Length)];
-        Vector2 direction = Random.insideUnitCircle.normalized;
-        float distance = Random.Range(minSpawnDistance, maxSpawnDistance);
+        // Wähle zufälligen Spieler
+        PlayerMovement target = players[UnityEngine.Random.Range(0, players.Length)];
+
+        // Zufällige Richtung und Distanz
+        Vector2 direction = UnityEngine.Random.insideUnitCircle.normalized;
+        float distance = UnityEngine.Random.Range(minSpawnDistance, maxSpawnDistance);
 
         return target.transform.position + (Vector3)(direction * distance);
     }
-
-    // ---------------- CLEANUP ----------------
 
     [Server]
     public void ClearAllEnemies()
@@ -142,11 +126,17 @@ public class EnemySpawner : NetworkBehaviour
         }
 
         activeEnemies.Clear();
+        Debug.Log("Alle Enemies entfernt!");
     }
+}
 
-    private void OnDisable()
-    {
-        if (spawnCoroutine != null)
-            StopCoroutine(spawnCoroutine);
-    }
+// Serializable Class für Enemy Prefab Einträge
+[System.Serializable]
+public class EnemyPrefabEntry
+{
+    [Tooltip("Enemy Prefab (muss NetworkObject haben!)")]
+    public GameObject enemyPrefab;
+
+    [Tooltip("Rarity bestimmt Spawn-Wahrscheinlichkeit")]
+    public EnemyRarityType rarity = EnemyRarityType.Common;
 }

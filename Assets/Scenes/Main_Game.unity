@@ -151,17 +151,19 @@ MonoBehaviour:
   _componentIndexCache: 255
   _addedNetworkObject: {fileID: 1793111105}
   _networkObjectCache: {fileID: 0}
-  enemyPrefab: {fileID: 6570189723692163056, guid: 68cc3b8f6641ead4aacb7eb651493f1c, type: 3}
-  enemyTypes:
-  - {fileID: 11400000, guid: 91a43b5168157d4499954cd7be029237, type: 2}
-  - {fileID: 11400000, guid: 30509bebd648a4d46bb172fa45f438e7, type: 2}
-  - {fileID: 11400000, guid: df0caf77c8d6efb498a1aa33d4562f2f, type: 2}
-  - {fileID: 11400000, guid: 9ba7103d195c0cb4ead81dfeb3ef4552, type: 2}
-  - {fileID: 11400000, guid: 03a1b4fe8359fb146a9b92686b6deda1, type: 2}
+  enemyPrefabs:
+  - enemyPrefab: {fileID: 6570189723692163056, guid: 68cc3b8f6641ead4aacb7eb651493f1c, type: 3}
+    rarity: 0
+  - enemyPrefab: {fileID: 6570189723692163056, guid: b95d886a4a0ae6044a5a739e5f44a779, type: 3}
+    rarity: 1
+  - enemyPrefab: {fileID: 6570189723692163056, guid: b7ea0f2eb65c79b41ac58c639558ee86, type: 3}
+    rarity: 2
+  - enemyPrefab: {fileID: 6570189723692163056, guid: e2fe31069d8707345b11e6bdf7928d49, type: 3}
+    rarity: 3
+  - enemyPrefab: {fileID: 6570189723692163056, guid: 49f64339f796adc4bbb2467d8b8a3410, type: 3}
+    rarity: 4
   minSpawnDistance: 12
   maxSpawnDistance: 16
-  spawnInterval: 1
-  maxEnemies: 10
 --- !u!4 &1303398
 Transform:
   m_ObjectHideFlags: 0

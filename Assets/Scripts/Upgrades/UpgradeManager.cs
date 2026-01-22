@@ -54,7 +54,7 @@ public class UpgradeManager : NetworkBehaviour
     [Server]
     public void CheckForUpgradePhase(int currentWave)
     {
-        if (currentWave == 1)
+        if (currentWave > 0 && currentWave % upgradeEveryXWaves == 0)
         {
             StartUpgradePhase();
         }
@@ -63,7 +63,7 @@ public class UpgradeManager : NetworkBehaviour
     [Server]
     private void StartUpgradePhase()
     {
-        Debug.Log(" Upgrade Phase gestartet!");
+        Debug.Log("⬆️ Upgrade Phase gestartet!");
 
         isUpgradePhase.Value = true;
         playersWhoChose.Clear();
@@ -74,6 +74,9 @@ public class UpgradeManager : NetworkBehaviour
 
         string[] upgradeNames = currentUpgradeOptions.Select(u => u.upgradeName).ToArray();
         ShowUpgradeUIClientRpc(upgradeNames);
+
+        // Pausiere das Spiel für alle Clients
+        PauseGameClientRpc();
     }
 
     [Server]
@@ -95,7 +98,6 @@ public class UpgradeManager : NetworkBehaviour
             shuffled[randomIndex] = temp;
         }
 
-        // Nimm die ersten X
         return shuffled.Take(count).ToList();
     }
 
@@ -108,14 +110,26 @@ public class UpgradeManager : NetworkBehaviour
         {
             upgradeUICanvas.SetActive(true);
 
-            // Finde UpgradeUI Component und setze Optionen
             UpgradeUI upgradeUI = upgradeUICanvas.GetComponent<UpgradeUI>();
             if (upgradeUI != null)
             {
                 upgradeUI.ShowUpgrades(upgradeNames);
-                //Time.timeScale = 0;
             }
         }
+    }
+
+    [ObserversRpc]
+    private void PauseGameClientRpc()
+    {
+        Time.timeScale = 0;
+        Debug.Log(" Spiel pausiert");
+    }
+
+    [ObserversRpc]
+    private void ResumeGameClientRpc()
+    {
+        Time.timeScale = 1;
+        Debug.Log(" Spiel fortgesetzt");
     }
 
     public void SelectUpgrade(int upgradeIndex)
@@ -158,8 +172,12 @@ public class UpgradeManager : NetworkBehaviour
 
         Debug.Log($" Player {sender.ClientId} wählte: {selectedUpgrade.upgradeName}");
 
-        var gameManager = OwnNetworkGameManager.Instance;
-        bool isPlayer1 = sender == GetPlayer1Connection();
+        // Bestimme ob Player 1 oder 2
+        var players = FindObjectsByType<PlayerMovement>(FindObjectsSortMode.None)
+            .OrderBy(p => p.Owner.ClientId)
+            .ToList();
+
+        bool isPlayer1 = players.Count > 0 && players[0].Owner == sender;
 
         if (isPlayer1)
         {
@@ -171,7 +189,6 @@ public class UpgradeManager : NetworkBehaviour
         }
 
         ApplyUpgrade(sender, selectedUpgrade);
-        //HideUpgradeUITargetRpc(sender);
         CheckIfAllPlayersChose();
     }
 
@@ -193,7 +210,7 @@ public class UpgradeManager : NetworkBehaviour
     {
         isUpgradePhase.Value = false;
         HideUpgradeUIClientRpc();
-       // Time.timeScale = 1;
+        ResumeGameClientRpc();
         Debug.Log(" Spiel wird fortgesetzt!");
     }
 
@@ -218,82 +235,53 @@ public class UpgradeManager : NetworkBehaviour
             return;
         }
 
-        ApplyUpgradeToPlayerTargetRpc(conn, upgrade.upgradeName);
-    }
-
-    [TargetRpc]
-    private void ApplyUpgradeToPlayerTargetRpc(NetworkConnection conn, string upgradeName)
-    {
-        UpgradeData upgrade = Resources.Load<UpgradeData>($"Upgrades/{upgradeName}");
-
-        if (upgrade == null)
-        {
-            Debug.LogError($"Upgrade '{upgradeName}' nicht in Resources/Upgrades/ gefunden!");
-            return;
-        }
-
-        var localPlayer = FindObjectsByType<PlayerMovement>(FindObjectsSortMode.None)
-            .FirstOrDefault(p => p.IsOwner);
-
-        if (localPlayer == null)
-            return;
-
-        Debug.Log($" Applying Upgrade: {upgrade.upgradeName}");
+        // Wende das Upgrade direkt auf dem Server an für alle Upgrade-Typen
+        Debug.Log($" Applying Upgrade on Server: {upgrade.upgradeName} to Player {conn.ClientId}");
 
         switch (upgrade.upgradeType)
         {
             case UpgradeType.MoveSpeed:
-                ApplyMoveSpeedUpgrade(localPlayer, upgrade);
+                targetPlayer.ApplyMoveSpeedMultiplier(upgrade.moveSpeedMultiplier);
+                Debug.Log($" Move Speed erhöht! ({upgrade.moveSpeedMultiplier}x)");
                 break;
 
             case UpgradeType.FireRate:
-                ApplyFireRateUpgrade(localPlayer, upgrade);
+                BulletSpawner spawnerFR = targetPlayer.GetComponent<BulletSpawner>();
+                if (spawnerFR != null)
+                {
+                    spawnerFR.ApplyFireRateMultiplier(upgrade.fireRateMultiplier);
+                    Debug.Log($" Fire Rate erhöht! ({upgrade.fireRateMultiplier}x)");
+                }
                 break;
 
             case UpgradeType.WeaponChange:
-                ApplyWeaponChangeUpgrade(localPlayer, upgrade);
+                BulletSpawner spawnerWC = targetPlayer.GetComponent<BulletSpawner>();
+                if (spawnerWC != null && upgrade.weaponBulletData != null)
+                {
+                    spawnerWC.ChangeBulletData(upgrade.weaponBulletData);
+                    Debug.Log($" Waffe geändert zu: {upgrade.weaponBulletData.bulletName}");
+                }
                 break;
 
             case UpgradeType.DamageDouble:
-                ApplyDamageUpgrade(localPlayer, upgrade);
+                BulletSpawner spawnerDM = targetPlayer.GetComponent<BulletSpawner>();
+                if (spawnerDM != null)
+                {
+                    spawnerDM.ApplyDamageMultiplier(upgrade.damageMultiplier);
+                    Debug.Log($" Damage erhöht! ({upgrade.damageMultiplier}x)");
+                }
                 break;
         }
-    }
 
-    private void ApplyMoveSpeedUpgrade(PlayerMovement player, UpgradeData upgrade)
-    {
-        player.ApplyMoveSpeedMultiplier(upgrade.moveSpeedMultiplier);
-        Debug.Log($" Move Speed erhöht! ({upgrade.moveSpeedMultiplier}x)");
+        // Sende Notification an den Client (optional, für UI-Feedback)
+        NotifyUpgradeAppliedTargetRpc(conn, upgrade.upgradeName);
     }
+    [TargetRpc]
 
-    private void ApplyFireRateUpgrade(PlayerMovement player, UpgradeData upgrade)
+    private void NotifyUpgradeAppliedTargetRpc(NetworkConnection conn, string upgradeName)
     {
-        BulletSpawner spawner = player.GetComponent<BulletSpawner>();
-        if (spawner != null)
-        {
-            spawner.ApplyFireRateMultiplier(upgrade.fireRateMultiplier);
-            Debug.Log($" Fire Rate erhöht! ({upgrade.fireRateMultiplier}x)");
-        }
-    }
-
-    private void ApplyWeaponChangeUpgrade(PlayerMovement player, UpgradeData upgrade)
-    {
-        BulletSpawner spawner = player.GetComponent<BulletSpawner>();
-        if (spawner != null && upgrade.weaponBulletData != null)
-        {
-            spawner.ChangeBulletData(upgrade.weaponBulletData);
-            Debug.Log($" Waffe geändert zu: {upgrade.weaponBulletData.bulletName}");
-        }
-    }
-
-    private void ApplyDamageUpgrade(PlayerMovement player, UpgradeData upgrade)
-    {
-        BulletSpawner spawner = player.GetComponent<BulletSpawner>();
-        if (spawner != null)
-        {
-            spawner.ApplyDamageMultiplier(upgrade.damageMultiplier);
-            Debug.Log($" Damage erhöht! ({upgrade.damageMultiplier}x)");
-        }
+        Debug.Log($" Upgrade erhalten: {upgradeName}");
+        // Hier kannst du optional UI-Feedback zeigen (z.B. "Upgrade erhalten!" Nachricht)
     }
 
     [TargetRpc]
@@ -312,22 +300,7 @@ public class UpgradeManager : NetworkBehaviour
 
     private void OnUpgradePhaseChanged(bool oldVal, bool newVal, bool asServer)
     {
-    }
-    private NetworkConnection GetPlayer1Connection()
-    {
-        var gameManager = OwnNetworkGameManager.Instance;
-        var players = FindObjectsByType<PlayerMovement>(FindObjectsSortMode.None);
 
-        foreach (var player in players)
-        {
-            if (!string.IsNullOrEmpty(gameManager.Player1.Value))
-            {
-                // Erster Spieler der ready war = Player 1
-                return players.FirstOrDefault()?.Owner;
-            }
-        }
-
-        return null;
     }
 
     public bool IsUpgradePhase => isUpgradePhase.Value;

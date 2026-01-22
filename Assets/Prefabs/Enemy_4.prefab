@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 1541745379178481700}
   - component: {fileID: 8320805081780582728}
   m_Layer: 6
-  m_Name: BaseEnemy
+  m_Name: Enemy_4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -107,8 +107,7 @@ MonoBehaviour:
   _componentIndexCache: 0
   _addedNetworkObject: {fileID: 7133641537068853120}
   _networkObjectCache: {fileID: 7133641537068853120}
-  enemyData: {fileID: 11400000, guid: 91a43b5168157d4499954cd7be029237, type: 2}
-  enemySpawner: {fileID: 0}
+  enemyData: {fileID: 11400000, guid: 9ba7103d195c0cb4ead81dfeb3ef4552, type: 2}
   spriteRenderer: {fileID: 5139274325837181312}
   rb: {fileID: 8320805081780582728}
 --- !u!114 &7133641537068853120
@@ -159,7 +158,7 @@ MonoBehaviour:
   _teleportThreshold: 1
   <PrefabId>k__BackingField: 2
   <SpawnableCollectionId>k__BackingField: 0
-  <AssetPathHash>k__BackingField: 3857701710945625395
+  <AssetPathHash>k__BackingField: 13385643608813033629
   SceneId: 0
   SerializedTransformProperties:
     Position: {x: -1.55, y: 2.9, z: 0}
