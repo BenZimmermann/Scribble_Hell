@@ -143,11 +143,11 @@ public class WaveManager : NetworkBehaviour
         {
             if (isWaveActive.Value)
             {
-                waveText.text = $"Welle {currentWave.Value}";
+                waveText.text = $"Wave {currentWave.Value}";
             }
             else
             {
-                waveText.text = $"Welle {currentWave.Value} - Vorbereitung...";
+                waveText.text = $"Starting...";
             }
         }
     }

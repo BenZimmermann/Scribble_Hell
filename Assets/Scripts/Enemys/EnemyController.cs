@@ -280,6 +280,11 @@ public class EnemyController : NetworkBehaviour
             WaveManager.Instance.OnEnemyKilled();
         }
         ServerManager.Despawn(gameObject);
+        if (OwnNetworkGameManager.Instance != null)
+        {
+            OwnNetworkGameManager.Instance.AddScore();
+            OwnNetworkGameManager.Instance.UpdateScoreUI();
+        }
     }
 
     #endregion

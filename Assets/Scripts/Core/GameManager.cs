@@ -1,4 +1,6 @@
 ﻿using FishNet.Connection;
+using FishNet.Managing.Scened;
+using FishNet.Managing;
 using FishNet.Managing.Timing;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
@@ -8,7 +10,8 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
+using FishNet;
+using UnityEngine.SceneManagement;
 
 public class OwnNetworkGameManager : NetworkBehaviour
 {
@@ -26,11 +29,15 @@ public class OwnNetworkGameManager : NetworkBehaviour
     [SerializeField] private TMP_Text ingamePlayer2NameText;
     [SerializeField] private Slider ingamePlayer1LivesSlider;
     [SerializeField] private Slider ingamePlayer2LivesSlider;
+    [SerializeField] private TMP_Text scoreText; // NEU: Score Anzeige
+    [SerializeField] private TMP_Text gameOverScoreText; // NEU: Score im GameOver
     [SerializeField] private int maxLives = 3;
 
     public readonly SyncVar<string> Player1 = new SyncVar<string>();
     public readonly SyncVar<string> Player2 = new SyncVar<string>();
     public readonly SyncVar<float> countdown = new SyncVar<float>();
+
+    public readonly SyncVar<int> currentScore = new SyncVar<int>();
 
     [Header("Lives")]
     public readonly SyncVar<int> Player1Lives = new SyncVar<int>();
@@ -45,13 +52,14 @@ public class OwnNetworkGameManager : NetworkBehaviour
     [Header("GameOver")]
     [SerializeField] private Image GameOverCanvas;
     public GameState CurrentState => gameState.Value;
+    private NetworkManager networkManager;
 
 
     private void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
-
+        networkManager = InstanceFinder.NetworkManager;
         gameState.OnChange += OnStateChanged;
         countdown.OnChange += OnCountdownChanged;
 
@@ -82,6 +90,7 @@ public class OwnNetworkGameManager : NetworkBehaviour
         gameState.Value = GameState.WaitingForPlayers;
         Player1.Value = "";
         Player2.Value = "";
+        currentScore.Value = 0;
         Player1Lives.Value = maxLives;
         Player2Lives.Value = maxLives;
         player1Connection = null;
@@ -95,6 +104,7 @@ public class OwnNetworkGameManager : NetworkBehaviour
         UpdateStateText();
         UpdateIngameNames();
         UpdateIngameLives();
+        UpdateScoreUI();
     }
 
     private void UpdateIngameNames()
@@ -113,7 +123,19 @@ public class OwnNetworkGameManager : NetworkBehaviour
                 : Player2.Value;
         }
     }
-
+    public void UpdateScoreUI()
+    {
+        if (scoreText != null)
+        {
+            scoreText.text = $"{currentScore.Value}";
+        }
+    }
+    [Server]
+    public void AddScore()
+    {
+            currentScore.Value += 15;
+        
+    }
     private void UpdateIngameLives()
     {
         if (ingamePlayer1LivesSlider != null)
@@ -128,7 +150,12 @@ public class OwnNetworkGameManager : NetworkBehaviour
             ingamePlayer2LivesSlider.value = Player2Lives.Value;
         }
     }
-
+    [Server]
+    public void ResetScore()
+    {
+        currentScore.Value = 0;
+        Debug.Log(" Score zurückgesetzt");
+    }
     #region State-Handling
 
     [Server]
@@ -280,7 +307,7 @@ public class OwnNetworkGameManager : NetworkBehaviour
         }
 
         gameState.Value = GameState.Playing;
-
+        ResetScore();
         HideLobbyCanvasClientRpc();
         EnablePlayerMovementClientRpc();
         if (WaveManager.Instance != null)
@@ -368,19 +395,46 @@ public class OwnNetworkGameManager : NetworkBehaviour
     public void GameOver()
     {
         GameOverCanvas.gameObject.SetActive(true);
+        if (gameOverScoreText != null)
+        {
+            gameOverScoreText.text = $"Highscore: {currentScore.Value}";
+        }
         Time.timeScale = 0;
     }
     #endregion
     public void OnQuit()
     {
-        //button pressed
-        Debug.Log("aowjdawiodad");
         Application.Quit();
     }
     public void OnRestart()
     {
-        
+        // Setze Time.timeScale zurück
+        Time.timeScale = 1f;
+
+        // Lade Scene einfach neu - Unity macht den Rest
+        UnityEngine.SceneManagement.SceneManager.LoadScene(
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex
+        );
     }
+    public void QuitToMenu()
+    {
+        Time.timeScale = 1f;
+
+        // Trenne Netzwerk-Verbindung
+        NetworkManager nm = InstanceFinder.NetworkManager;
+        if (nm != null)
+        {
+            if (nm.IsServerStarted)
+                nm.ServerManager.StopConnection(true);
+
+            if (nm.IsClientStarted)
+                nm.ClientManager.StopConnection();
+        }
+
+        Debug.Log(" Zurück zum Menü");
+        UnityEngine.SceneManagement.SceneManager.LoadScene(0);
+    }
+
 }
 
 
