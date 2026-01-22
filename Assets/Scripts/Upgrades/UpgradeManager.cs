@@ -235,7 +235,7 @@ public class UpgradeManager : NetworkBehaviour
             return;
         }
 
-        // Wende das Upgrade direkt auf dem Server an für alle Upgrade-Typen
+
         Debug.Log($" Applying Upgrade on Server: {upgrade.upgradeName} to Player {conn.ClientId}");
 
         switch (upgrade.upgradeType)

@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: MoveSpeed
   m_EditorClassIdentifier: 
   upgradeName: MoveSpeed
-  description: Movement
+  description: Faster
   icon: {fileID: 21300000, guid: 866c08715efe19e40b7fbdaa63f11c7b, type: 3}
   upgradeType: 0
-  moveSpeedMultiplier: 2
+  moveSpeedMultiplier: 1.5
   weaponBulletData: {fileID: 0}
   fireRateMultiplier: 0
   damageMultiplier: 0

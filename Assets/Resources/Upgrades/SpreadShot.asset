@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: SpreadShot
   m_EditorClassIdentifier: 
   upgradeName: SpreadShot
-  description: SpreadShot
+  description: Work In Progress
   icon: {fileID: 21300000, guid: ba12892111b4c454fbdb3a5248ba4a97, type: 3}
   upgradeType: 2
   moveSpeedMultiplier: 0

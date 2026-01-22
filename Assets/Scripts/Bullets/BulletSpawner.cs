@@ -13,6 +13,7 @@ public class BulletSpawner : NetworkBehaviour
     [Header("Aim Settings")]
     [SerializeField] private bool aimWithMouse = true;
     [SerializeField] private Camera mainCamera;
+    private BulletData runtimeBulletData;
 
     [Header("Auto Shoot Settings")]
     [SerializeField] private bool autoShootEnabled = true;
@@ -23,7 +24,6 @@ public class BulletSpawner : NetworkBehaviour
     [Header("Upgrades")]
     private float fireRateMultiplier = 10f;
     private int damageMultiplier = 1;
-    private BulletData runtimeBulletData;
 
     private PlayerMovement playerMovement;
     private Vector2 aimDirection = Vector2.up; // Richtung zur Maus
@@ -40,10 +40,7 @@ public class BulletSpawner : NetworkBehaviour
 
         if (mainCamera == null)
             mainCamera = Camera.main;
-        if (bulletData != null)
-        {
-            runtimeBulletData = Instantiate(bulletData);
-        }
+
     }
 
     public override void OnStartClient()
@@ -84,6 +81,7 @@ public class BulletSpawner : NetworkBehaviour
     }
 
     // Wird vom PlayerMovement.StartGame() aufgerufen
+
     public void StartShooting()
     {
         if (!autoShootEnabled || bulletData == null) return;
@@ -207,7 +205,7 @@ public class BulletSpawner : NetworkBehaviour
                 break;
         }
 
-        Debug.Log($"✓ Fire Rate erhöht! Neue Rate: {runtimeBulletData.fireRate}");
+        Debug.Log($" Fire Rate erhöht! Neue Rate: {runtimeBulletData.fireRate}");
     }
     public void ApplyDamageMultiplier(int multiplier)
     {
@@ -216,7 +214,7 @@ public class BulletSpawner : NetworkBehaviour
         // Modifiziere Damage in Runtime Kopie
         runtimeBulletData.damageToEnemies *= multiplier;
 
-        Debug.Log($"✓ Damage erhöht! Neuer Damage: {runtimeBulletData.damageToEnemies}");
+        Debug.Log($" Damage erhöht! Neuer Damage: {runtimeBulletData.damageToEnemies}");
     }
 
     public void ChangeBulletData(BulletData newBulletData)
@@ -226,7 +224,7 @@ public class BulletSpawner : NetworkBehaviour
         // Erstelle neue Runtime Kopie
         runtimeBulletData = Instantiate(newBulletData);
 
-        Debug.Log($"✓ Waffe geändert zu: {runtimeBulletData.bulletName}");
+        Debug.Log($" Waffe geändert zu: {runtimeBulletData.bulletName}");
     }
 
 

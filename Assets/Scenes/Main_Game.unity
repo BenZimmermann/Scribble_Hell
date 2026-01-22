@@ -8806,7 +8806,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: b5a510270a7761a45a9a0b6ee188c519, type: 2}
   - {fileID: 11400000, guid: 083724ded5197ba4b82f60bec43c977c, type: 2}
   - {fileID: 11400000, guid: ff27e689b3f5e284bbdc86ae577b8c80, type: 2}
-  upgradeEveryXWaves: 2
+  upgradeEveryXWaves: 5
   upgradeUICanvas: {fileID: 298463608}
 --- !u!1 &1441042970
 GameObject:

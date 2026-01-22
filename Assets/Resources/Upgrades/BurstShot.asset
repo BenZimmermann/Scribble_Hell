@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: BurstShot
   m_EditorClassIdentifier: 
   upgradeName: BurstShot
-  description: Burst
+  description: Work in Progress
   icon: {fileID: 21300000, guid: 029cce2e3e42a0b4d84faa5eaa7def59, type: 3}
   upgradeType: 2
   moveSpeedMultiplier: 0
