@@ -23,18 +23,16 @@ public class UpgradeManager : NetworkBehaviour
     private readonly SyncVar<string> player1UpgradeChoice = new SyncVar<string>();
     private readonly SyncVar<string> player2UpgradeChoice = new SyncVar<string>();
 
-    // Speichert die 3 zufälligen Upgrades dieser Runde (Server)
+    // random upgrade options for current phase
     private List<UpgradeData> currentUpgradeOptions = new List<UpgradeData>();
 
-    // Speichert welche Spieler bereits gewählt haben
+    // saves which players have chosen
     private HashSet<NetworkConnection> playersWhoChose = new HashSet<NetworkConnection>();
 
     private void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
-
-        isUpgradePhase.OnChange += OnUpgradePhaseChanged;
     }
 
     public override void OnStartServer()
@@ -59,12 +57,10 @@ public class UpgradeManager : NetworkBehaviour
             StartUpgradePhase();
         }
     }
-
+    //start upgrade phase
     [Server]
     private void StartUpgradePhase()
     {
-        Debug.Log("⬆️ Upgrade Phase gestartet!");
-
         isUpgradePhase.Value = true;
         playersWhoChose.Clear();
         player1UpgradeChoice.Value = "";
@@ -75,11 +71,11 @@ public class UpgradeManager : NetworkBehaviour
         string[] upgradeNames = currentUpgradeOptions.Select(u => u.upgradeName).ToArray();
         ShowUpgradeUIClientRpc(upgradeNames);
 
-        // Pausiere das Spiel für alle Clients
         PauseGameClientRpc();
     }
 
     [Server]
+    //get 3 random upgrades from allUpgrades
     private List<UpgradeData> GetRandomUpgrades(int count)
     {
         if (allUpgrades == null || allUpgrades.Count == 0)
@@ -100,7 +96,7 @@ public class UpgradeManager : NetworkBehaviour
 
         return shuffled.Take(count).ToList();
     }
-
+    //show upgrade UI on clients
     [ObserversRpc]
     private void ShowUpgradeUIClientRpc(string[] upgradeNames)
     {
@@ -131,7 +127,7 @@ public class UpgradeManager : NetworkBehaviour
         Time.timeScale = 1;
         Debug.Log(" Spiel fortgesetzt");
     }
-
+    //called by client to select upgrade
     public void SelectUpgrade(int upgradeIndex)
     {
         if (upgradeIndex < 0 || upgradeIndex >= 3)
@@ -191,7 +187,7 @@ public class UpgradeManager : NetworkBehaviour
         ApplyUpgrade(sender, selectedUpgrade);
         CheckIfAllPlayersChose();
     }
-
+    //cbheck if all players have chosen
     [Server]
     private void CheckIfAllPlayersChose()
     {
@@ -231,12 +227,8 @@ public class UpgradeManager : NetworkBehaviour
 
         if (targetPlayer == null)
         {
-            Debug.LogError("Spieler nicht gefunden!");
             return;
         }
-
-
-        Debug.Log($" Applying Upgrade on Server: {upgrade.upgradeName} to Player {conn.ClientId}");
 
         switch (upgrade.upgradeType)
         {
@@ -273,7 +265,7 @@ public class UpgradeManager : NetworkBehaviour
                 break;
         }
 
-        // Sende Notification an den Client (optional, für UI-Feedback)
+        // Sende Notification an den Client
         NotifyUpgradeAppliedTargetRpc(conn, upgrade.upgradeName);
     }
     [TargetRpc]
@@ -296,11 +288,6 @@ public class UpgradeManager : NetworkBehaviour
     {
         if (upgradeUICanvas != null)
             upgradeUICanvas.SetActive(false);
-    }
-
-    private void OnUpgradePhaseChanged(bool oldVal, bool newVal, bool asServer)
-    {
-
     }
 
     public bool IsUpgradePhase => isUpgradePhase.Value;

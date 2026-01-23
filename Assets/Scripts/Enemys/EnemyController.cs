@@ -131,7 +131,7 @@ public class EnemyController : NetworkBehaviour
 
         if (nearestPlayer != null)
         {
-            // Stoppe bei bestimmter Distanz wenn aktiviert
+            // not in use
             if (enemyData.stopAtDistance && nearestDistance <= enemyData.stopDistance)
             {
                 rb.linearVelocity = Vector2.zero;
@@ -141,7 +141,7 @@ public class EnemyController : NetworkBehaviour
             Vector2 direction = (nearestPlayer.position - transform.position).normalized;
             rb.linearVelocity = direction * enemyData.moveSpeed;
 
-            // Rotation zum Spieler
+            
             float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
             transform.rotation = Quaternion.Lerp(
                 transform.rotation,
@@ -222,9 +222,7 @@ public class EnemyController : NetworkBehaviour
         {
 
             lastDamageTime = Time.time;
-            Debug.Log("skibidi ZUERST " + player);
             player.TakeDamageServerRpc();
-            Debug.Log("skibidi last " + player);
             if (IsServerStarted && enemyData.flashOnDamage)
             {
                 FlashDamageClientRpc();
@@ -249,7 +247,6 @@ public class EnemyController : NetworkBehaviour
     {
         Color originalColor = spriteRenderer.color;
         spriteRenderer.color = enemyData.damageFlashColor;
-        Debug.Log("Enemy flash color applied.");
         yield return new WaitForSeconds(enemyData.flashDuration);
 
         spriteRenderer.color = originalColor;
@@ -289,7 +286,6 @@ public class EnemyController : NetworkBehaviour
 
     #endregion
 
-    // Debug Visualisierung
     private void OnDrawGizmosSelected()
     {
         if (enemyData == null) return;

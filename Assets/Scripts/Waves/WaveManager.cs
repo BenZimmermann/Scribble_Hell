@@ -56,13 +56,11 @@ public class WaveManager : NetworkBehaviour
         UpdateProgressBar();
     }
 
-    // Wird vom GameManager aufgerufen wenn Spiel startet
     [Server]
     public void StartWaveSystem()
     {
         if (enemySpawner == null)
         {
-            Debug.LogError("EnemySpawner nicht zugewiesen!");
             return;
         }
 
@@ -81,9 +79,6 @@ public class WaveManager : NetworkBehaviour
             // Berechne Anzahl Enemies für diese Wave
             totalEnemiesThisWave.Value = startEnemyCount + ((currentWave.Value - 1) * enemyIncreasePerWave);
 
-            Debug.Log($"=== Wave {currentWave.Value} gestartet! ===");
-            Debug.Log($"Enemies: {totalEnemiesThisWave.Value}");
-
             // Wave ist jetzt AKTIV - Enemies können spawnen
             isWaveActive.Value = true;
 
@@ -96,23 +91,18 @@ public class WaveManager : NetworkBehaviour
                 yield return new WaitForSeconds(timeBetweenSpawns);
             }
 
-            Debug.Log($"Alle {totalEnemiesThisWave.Value} Enemies gespawned für Wave {currentWave.Value}!");
 
             // Warte bis alle Enemies getötet wurden
             yield return new WaitUntil(() => enemiesKilled.Value >= totalEnemiesThisWave.Value);
 
             // Wave BEENDET - Keine Enemies mehr spawnen
             isWaveActive.Value = false;
-
-            Debug.Log($"=== Wave {currentWave.Value} abgeschlossen! ===");
-            Debug.Log($"Alle {totalEnemiesThisWave.Value} Enemies getötet!");
             UpgradeManager.Instance.CheckForUpgradePhase(currentWave.Value);
             // Kurze Pause, dann nächste Wave
             yield return new WaitForSeconds(1f);
         }
     }
 
-    // Wird vom EnemyController aufgerufen wenn Enemy stirbt
     [Server]
     public void OnEnemyKilled()
     {
@@ -156,7 +146,6 @@ public class WaveManager : NetworkBehaviour
     {
         if (waveProgressSlider != null && totalEnemiesThisWave.Value > 0)
         {
-            // Slider startet VOLL (100%) und geht RUNTER wenn Enemies getötet werden
             int remainingEnemies = totalEnemiesThisWave.Value - enemiesKilled.Value;
             float progress = (float)remainingEnemies / totalEnemiesThisWave.Value;
 
@@ -167,7 +156,6 @@ public class WaveManager : NetworkBehaviour
 
     #endregion
 
-    // Public Getter
     public int CurrentWave => currentWave.Value;
     public int EnemiesKilled => enemiesKilled.Value;
     public int TotalEnemiesThisWave => totalEnemiesThisWave.Value;

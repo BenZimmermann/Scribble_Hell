@@ -15,6 +15,7 @@ public class EnemySpawner : NetworkBehaviour
 
     private readonly List<GameObject> activeEnemies = new();
 
+    // value of rarity weights
     private static readonly Dictionary<EnemyRarityType, float> RARITY_WEIGHTS = new()
     {
         { EnemyRarityType.Common, 60f },
@@ -29,11 +30,10 @@ public class EnemySpawner : NetworkBehaviour
     {
         if (enemyPrefabs == null || enemyPrefabs.Count == 0)
         {
-            Debug.LogWarning("Keine Enemy Prefabs zugewiesen!");
             return;
         }
 
-        // Wähle gewichtetes zufälliges Enemy Prefab
+        // Randomly select an enemy prefab based on rarity weights
         EnemyPrefabEntry selectedEntry = GetWeightedRandomEnemy();
 
         if (selectedEntry == null || selectedEntry.enemyPrefab == null)
@@ -45,13 +45,11 @@ public class EnemySpawner : NetworkBehaviour
         // Spawn Position
         Vector3 spawnPosition = GetSpawnPositionNearPlayers();
 
-        // Spawne Enemy
+        // Spawn Enemy
         GameObject enemy = Instantiate(selectedEntry.enemyPrefab, spawnPosition, Quaternion.identity);
 
-        // Spawne im Netzwerk
         ServerManager.Spawn(enemy);
 
-        // Füge zur Liste hinzu
         activeEnemies.Add(enemy);
 
         Debug.Log($"Enemy gespawned: {selectedEntry.enemyPrefab.name} (Rarity: {selectedEntry.rarity})");
@@ -62,7 +60,7 @@ public class EnemySpawner : NetworkBehaviour
     {
         float totalWeight = 0f;
 
-        // Berechne Gesamtgewicht
+        //calculate total weight
         foreach (EnemyPrefabEntry entry in enemyPrefabs)
         {
             if (entry.enemyPrefab != null)
@@ -77,7 +75,7 @@ public class EnemySpawner : NetworkBehaviour
             return null;
         }
 
-        // Zufallsauswahl basierend auf Gewicht
+        //random roll
         float roll = UnityEngine.Random.Range(0f, totalWeight);
         float current = 0f;
 
@@ -94,7 +92,6 @@ public class EnemySpawner : NetworkBehaviour
             }
         }
 
-        // Fallback: Erstes gültiges Prefab
         return enemyPrefabs.Find(e => e.enemyPrefab != null);
     }
 
@@ -106,10 +103,10 @@ public class EnemySpawner : NetworkBehaviour
         if (players.Length == 0)
             return Vector3.zero;
 
-        // Wähle zufälligen Spieler
+        // randomly select a player
         PlayerMovement target = players[UnityEngine.Random.Range(0, players.Length)];
 
-        // Zufällige Richtung und Distanz
+        // random direction and distance
         Vector2 direction = UnityEngine.Random.insideUnitCircle.normalized;
         float distance = UnityEngine.Random.Range(minSpawnDistance, maxSpawnDistance);
 
@@ -126,7 +123,6 @@ public class EnemySpawner : NetworkBehaviour
         }
 
         activeEnemies.Clear();
-        Debug.Log("Alle Enemies entfernt!");
     }
 }
 
@@ -134,9 +130,6 @@ public class EnemySpawner : NetworkBehaviour
 [System.Serializable]
 public class EnemyPrefabEntry
 {
-    [Tooltip("Enemy Prefab (muss NetworkObject haben!)")]
     public GameObject enemyPrefab;
-
-    [Tooltip("Rarity bestimmt Spawn-Wahrscheinlichkeit")]
     public EnemyRarityType rarity = EnemyRarityType.Common;
 }

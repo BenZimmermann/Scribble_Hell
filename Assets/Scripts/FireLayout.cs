@@ -34,7 +34,7 @@ public class CircleBorderSpawner_TopDown : MonoBehaviour
         Renderer r = GetComponent<Renderer>();
         if (r != null)
         {
-            // XY-Ebene für Top-Down
+          
             radius = Mathf.Max(r.bounds.extents.x, r.bounds.extents.y);
         }
     }
@@ -77,7 +77,7 @@ public class CircleBorderSpawner_TopDown : MonoBehaviour
             );
 
             spawned[i].transform.localPosition = localPos;
-            // ⚠️ Keine Rotation setzen → Prefab-Rotation bleibt erhalten
+            // Keine Rotation setzen -> Prefab-Rotation bleibt erhalten
         }
     }
 }

@@ -12,14 +12,14 @@ public class UpgradeData : ScriptableObject
     public UpgradeType upgradeType;
 
     [Header("Movement Upgrade")]
-    public float moveSpeedMultiplier = 1.5f; // z.B. 1.5 = 50% schneller
+    public float moveSpeedMultiplier = 1.5f; //  50% schneller
 
     [Header("Weapon Upgrade")]
-    public BulletData weaponBulletData; // Für Spreadshot, Burst, etc.
-    public float fireRateMultiplier = 1.5f; // Für schneller schießen
+    public BulletData weaponBulletData; // Spreadshot, Burst, etc.
+    public float fireRateMultiplier = 1.5f; // schneller schießen
 
     [Header("Damage Upgrade")]
-    public int damageMultiplier = 2; // z.B. 2 = Doppelter Schaden
+    public int damageMultiplier = 2; //Doppelter Schaden
 }
 
 public enum UpgradeType

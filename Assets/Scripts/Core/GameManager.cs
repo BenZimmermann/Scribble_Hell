@@ -29,8 +29,8 @@ public class OwnNetworkGameManager : NetworkBehaviour
     [SerializeField] private TMP_Text ingamePlayer2NameText;
     [SerializeField] private Slider ingamePlayer1LivesSlider;
     [SerializeField] private Slider ingamePlayer2LivesSlider;
-    [SerializeField] private TMP_Text scoreText; // NEU: Score Anzeige
-    [SerializeField] private TMP_Text gameOverScoreText; // NEU: Score im GameOver
+    [SerializeField] private TMP_Text scoreText;
+    [SerializeField] private TMP_Text gameOverScoreText;
     [SerializeField] private int maxLives = 3;
 
     public readonly SyncVar<string> Player1 = new SyncVar<string>();
@@ -154,11 +154,11 @@ public class OwnNetworkGameManager : NetworkBehaviour
     public void ResetScore()
     {
         currentScore.Value = 0;
-        Debug.Log(" Score zurückgesetzt");
     }
     #region State-Handling
 
     [Server]
+    // checks if enough players are ready to start the game
     public void CheckAndStartGame()
     {
         if (CurrentState != GameState.WaitingForPlayers) return;
@@ -170,7 +170,7 @@ public class OwnNetworkGameManager : NetworkBehaviour
             StartCoroutine(SwitchToStartingGame());
         }
     }
-
+    // called by the Ready button
     public void SetPlayerReady()
     {
         var localPlayer = FindObjectsByType<PlayerMovement>(FindObjectsSortMode.None)
@@ -227,7 +227,7 @@ public class OwnNetworkGameManager : NetworkBehaviour
                 buttonText.text = isOff ? "Cancel" : "Ready";
         }
     }
-
+    // shows the player's name in the lobby UI
     [TargetRpc]
     public void ShowPlayerNameReady(NetworkConnection con, string name)
     {
@@ -254,7 +254,7 @@ public class OwnNetworkGameManager : NetworkBehaviour
     {
         UpdateStateText();
     }
-
+    // updates the lobby UI text based on the current game state
     private void UpdateStateText()
     {
         if (stateText == null) return;
@@ -338,13 +338,14 @@ public class OwnNetworkGameManager : NetworkBehaviour
     #endregion
 
     #region Lives Management
+    // called when a player loses a life
 
     [Server]
     public void LoseLife(NetworkConnection conn)
     {
         if (player1Connection == null || player2Connection == null)
         {
-            Debug.LogError($"FEHLER: Connections sind NULL! P1={player1Connection?.ClientId}, P2={player2Connection?.ClientId}");
+            //Debug.LogError($"FEHLER: Connections sind NULL! P1={player1Connection?.ClientId}, P2={player2Connection?.ClientId}");
             return;
         }
         var player = conn.FirstObject.GetComponent<PlayerMovement>();
@@ -352,7 +353,7 @@ public class OwnNetworkGameManager : NetworkBehaviour
         {
             return;
         }
-        Debug.Log($"ICH BIN CONNECTION {conn.ClientId} IN GameManger.LoseLife()");
+        //Debug.Log($"ICH BIN CONNECTION {conn.ClientId} IN GameManger.LoseLife()");
 
         int playerIndex = -1;
 
@@ -379,7 +380,7 @@ public class OwnNetworkGameManager : NetworkBehaviour
         }
         if (Player2Lives.Value <= 0 || Player1Lives.Value <= 0)
         {
-            Debug.Log("SPIEL VORBEI");
+            //Debug.Log("SPIEL VORBEI");
             GameOver();
         }
     }
@@ -408,10 +409,9 @@ public class OwnNetworkGameManager : NetworkBehaviour
     }
     public void OnRestart()
     {
-        // Setze Time.timeScale zurück
         Time.timeScale = 1f;
 
-        // Lade Scene einfach neu - Unity macht den Rest
+        //restart scene
         UnityEngine.SceneManagement.SceneManager.LoadScene(
             UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex
         );
@@ -420,7 +420,7 @@ public class OwnNetworkGameManager : NetworkBehaviour
     {
         Time.timeScale = 1f;
 
-        // Trenne Netzwerk-Verbindung
+        // cut network connections (easier)
         NetworkManager nm = InstanceFinder.NetworkManager;
         if (nm != null)
         {

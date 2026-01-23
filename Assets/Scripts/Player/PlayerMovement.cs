@@ -8,7 +8,7 @@ public class PlayerMovement : NetworkBehaviour
 {
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 5f;
-    private float moveSpeedMultiplier = 1f; // Für Upgrades
+    private float moveSpeedMultiplier = 1f; // Upgrades
 
     [Header("Input System")]
     [SerializeField] public InputAction moveAction;
@@ -39,7 +39,7 @@ public class PlayerMovement : NetworkBehaviour
         if (!IsOwner)
             return;
 
-        // Kamera nur lokal setzen
+        // local camera follow
         CameraFollow cam = Camera.main.GetComponent<CameraFollow>();
         if (cam != null)
             cam.SetTarget(transform);
@@ -62,7 +62,7 @@ public class PlayerMovement : NetworkBehaviour
         if (!IsOwner)
             return;
 
-        // Nur bewegen wenn das Spiel gestartet ist
+        // only allow movement during playing state
         if (OwnNetworkGameManager.Instance.CurrentState != GameState.Playing)
             return;
 
@@ -129,7 +129,6 @@ public class PlayerMovement : NetworkBehaviour
     [Server]
     public void TakeDamageServerRpc()
     {
-        Debug.Log($"ICH BIN {Owner.ClientId} UND HABE SCHADEN BEKOMMEN");
         // Server verarbeitet den Schaden basierend auf Owner
         OwnNetworkGameManager.Instance.LoseLife(Owner);
     }

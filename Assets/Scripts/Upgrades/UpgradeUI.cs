@@ -42,7 +42,7 @@ public class UpgradeUI : MonoBehaviour
         if (titleText != null)
             titleText.text = "Upgrade Time!";
 
-        // Lade Upgrade Daten aus Resources und zeige an
+        // load and set upgrade info
         for (int i = 0; i < upgradeNames.Length && i < 3; i++)
         {
             UpgradeData upgrade = Resources.Load<UpgradeData>($"Upgrades/{upgradeNames[i]}");
@@ -104,12 +104,11 @@ public class UpgradeUI : MonoBehaviour
     {
         Debug.Log($"Upgrade {index + 1} ausgewählt!");
 
-        // Deaktiviere alle Buttons (verhindert mehrfache Auswahl)
+        // deactivate Buttons to prevent multiple clicks
         upgrade1Button.interactable = false;
         upgrade2Button.interactable = false;
         upgrade3Button.interactable = false;
 
-        // Rufe UpgradeManager auf
         if (UpgradeManager.Instance != null)
         {
             UpgradeManager.Instance.SelectUpgrade(index);
@@ -118,7 +117,7 @@ public class UpgradeUI : MonoBehaviour
 
     private void OnDisable()
     {
-        // Re-enable Buttons für nächstes Mal
+
         upgrade1Button.interactable = true;
         upgrade2Button.interactable = true;
         upgrade3Button.interactable = true;

@@ -9,13 +9,13 @@ public class Bullet : NetworkBehaviour
     private BulletData bulletData;
     private readonly SyncVar<Vector2> syncDirection = new SyncVar<Vector2>();
     private readonly SyncVar<float> syncSpeed = new SyncVar<float>();
-    private readonly SyncVar<int> syncDamage = new SyncVar<int>(); // Für Damage Multiplier
+    private readonly SyncVar<int> syncDamage = new SyncVar<int>();
 
     private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;
     private TrailRenderer trailRenderer;
     private int pierceCount = 0;
-    private bool isInitialized = false;
+    //private bool isInitialized = false;
 
     private void Awake()
     {
@@ -35,7 +35,7 @@ public class Bullet : NetworkBehaviour
         syncDirection.Value = shootDirection.normalized;
         syncSpeed.Value = bulletData.bulletSpeed;
 
-        // Setze Velocity auf Server
+        //Veolocety on server
         ApplyVelocity();
 
         // Rotation
@@ -45,12 +45,12 @@ public class Bullet : NetworkBehaviour
             transform.rotation = Quaternion.Euler(0, 0, angle);
         }
 
-        // Sende Visuals an alle Clients
+       
         InitializeVisualsClientRpc(data.bulletName);
 
-        isInitialized = true;
+        //isInitialized = true;
 
-        // Auto-Destroy nach LifeTime
+        // Auto-Destroy after LifeTime
         StartCoroutine(DestroyAfterTime());
     }
 
@@ -58,7 +58,7 @@ public class Bullet : NetworkBehaviour
     {
         base.OnStartClient();
 
-        // Clients setzen Velocity wenn SyncVars bereits da sind
+
         if (!IsServerStarted && syncDirection.Value != Vector2.zero)
         {
             ApplyVelocity();
@@ -70,7 +70,7 @@ public class Bullet : NetworkBehaviour
             }
         }
     }
-
+    
     private void OnDirectionChanged(Vector2 oldVal, Vector2 newVal, bool asServer)
     {
         if (!asServer && newVal != Vector2.zero)
@@ -104,12 +104,10 @@ public class Bullet : NetworkBehaviour
     [ObserversRpc]
     private void InitializeVisualsClientRpc(string dataName)
     {
-        // Lade BulletData auf Client
         bulletData = Resources.Load<BulletData>($"BulletData/{dataName}");
 
         if (bulletData == null)
         {
-            Debug.LogWarning($"BulletData '{dataName}' nicht in Resources/BulletData/ gefunden!");
             return;
         }
 
@@ -140,7 +138,7 @@ public class Bullet : NetworkBehaviour
             }
         }
     }
-
+    // Auto-destroy coroutine 
     private IEnumerator DestroyAfterTime()
     {
         yield return new WaitForSeconds(bulletData.lifeTime);
@@ -156,14 +154,12 @@ public class Bullet : NetworkBehaviour
     {
         if (!IsServerStarted) return;
 
-        // Prüfe auf Enemy
         EnemyController enemy = collision.GetComponent<EnemyController>();
         if (enemy != null)
         {
-            Debug.Log("Bullet hit enemy: " + enemy.name);
             enemy.TakeDamage(bulletData.damageToEnemies);
 
-            // Piercing Logik
+            // Piercing Logic (not in use)
             if (bulletData.piercing)
             {
                 pierceCount++;

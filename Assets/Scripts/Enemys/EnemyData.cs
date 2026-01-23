@@ -50,7 +50,7 @@ public class EnemyData : ScriptableObject
 
 public enum EnemyMovementType
 {
-    Stationary,  // Bewegt sich nicht
+    Stationary,
     Chase,       
 }
 public enum EnemyRarityType

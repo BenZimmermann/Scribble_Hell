@@ -21,12 +21,9 @@ public class BulletSpawner : NetworkBehaviour
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
 
-    [Header("Upgrades")]
-    private float fireRateMultiplier = 10f;
-    private int damageMultiplier = 1;
 
     private PlayerMovement playerMovement;
-    private Vector2 aimDirection = Vector2.up; // Richtung zur Maus
+    private Vector2 aimDirection = Vector2.up;
     private float lastShootTime = -999f;
     private bool isBurstActive = false;
     private Coroutine autoShootCoroutine;
@@ -59,19 +56,19 @@ public class BulletSpawner : NetworkBehaviour
         if (!IsOwner) return;
         if (OwnNetworkGameManager.Instance.CurrentState != GameState.Playing) return;
 
-        // Berechne Richtung zur Maus
+        //update aim direction each frame
         UpdateAimDirection();
     }
-
+    // refresh aim direction to mouse position
     private void UpdateAimDirection()
     {
         if (!aimWithMouse || mainCamera == null) return;
 
-        // Hole Mausposition in Weltkoordinaten
+        // mouse position in world space
         Vector3 mouseWorldPos = mainCamera.ScreenToWorldPoint(Mouse.current.position.ReadValue());
-        mouseWorldPos.z = 0; // 2D Spiel
+        mouseWorldPos.z = 0;
 
-        // Berechne Richtung vom Spieler zur Maus
+        
         Vector2 directionToMouse = (mouseWorldPos - transform.position).normalized;
 
         if (directionToMouse.magnitude > 0.1f)
@@ -80,7 +77,7 @@ public class BulletSpawner : NetworkBehaviour
         }
     }
 
-    // Wird vom PlayerMovement.StartGame() aufgerufen
+    //called to start auto shooting
 
     public void StartShooting()
     {
@@ -103,7 +100,7 @@ public class BulletSpawner : NetworkBehaviour
         }
         isBurstActive = false;
     }
-
+    // Auto shooting coroutines based on shoot pattern
     private IEnumerator AutoShootCoroutine()
     {
         while (true)
@@ -172,7 +169,6 @@ public class BulletSpawner : NetworkBehaviour
 
     private void ShootSpread()
     {
-        // Berechne Spread Winkel
         float startAngle = -(bulletData.spreadAngle * (bulletData.spreadCount - 1)) / 2f;
 
         for (int i = 0; i < bulletData.spreadCount; i++)
@@ -187,8 +183,8 @@ public class BulletSpawner : NetworkBehaviour
     public void ApplyFireRateMultiplier(float multiplier)
     {
         if (runtimeBulletData == null) return;
-
-        // Modifiziere die Runtime Kopie
+        //works theoretically -_-
+        //modify Fire Rate in Runtime Kopie
         switch (runtimeBulletData.shootPattern)
         {
             case ShootPattern.Single:
@@ -211,7 +207,7 @@ public class BulletSpawner : NetworkBehaviour
     {
         if (runtimeBulletData == null) return;
 
-        // Modifiziere Damage in Runtime Kopie
+        // modify Damage in Runtime Kopie
         runtimeBulletData.damageToEnemies *= multiplier;
 
         Debug.Log($" Damage erhöht! Neuer Damage: {runtimeBulletData.damageToEnemies}");
@@ -221,7 +217,7 @@ public class BulletSpawner : NetworkBehaviour
     {
         if (newBulletData == null) return;
 
-        // Erstelle neue Runtime Kopie
+        // create runtime copy of new bullet data
         runtimeBulletData = Instantiate(newBulletData);
 
         Debug.Log($" Waffe geändert zu: {runtimeBulletData.bulletName}");
@@ -236,20 +232,20 @@ public class BulletSpawner : NetworkBehaviour
         // Spawn Position
         Vector3 spawnPos = firePoint != null ? firePoint.position : transform.position;
 
-        // Erstelle Bullet
+  
         GameObject bullet = Instantiate(bulletPrefab, spawnPos, Quaternion.identity);
 
-        // Spawne im Netzwerk
+
         ServerManager.Spawn(bullet);
 
-        // Initialisiere Bullet
+        // Initialise Bullet
         Bullet bulletScript = bullet.GetComponent<Bullet>();
         if (bulletScript != null)
         {
             bulletScript.Initialize(bulletData, direction);
         }
 
-        // Sound abspielen
+
         PlayShootSoundClientRpc();
     }
 
@@ -262,7 +258,7 @@ public class BulletSpawner : NetworkBehaviour
         }
     }
 
-    // Hilfsfunktion zum Rotieren von Vektoren
+
     private Vector2 RotateVector(Vector2 vector, float degrees)
     {
         float radians = degrees * Mathf.Deg2Rad;

@@ -10,10 +10,10 @@ public class BorderManager : NetworkBehaviour
     [SerializeField] private GameObject outOfBoundsWarning;
     [SerializeField] private float outOfBoundsTime = 5f;
 
-    // Spieler die aktuell draußen sind
+    // player out of bounds status
     private readonly HashSet<NetworkConnection> playersOutOfBounds = new();
 
-    // Laufende Timer pro Spieler
+    // timer coroutines for each player
     private readonly Dictionary<NetworkConnection, Coroutine> outOfBoundsTimers = new();
 
     private void Awake()
@@ -41,7 +41,7 @@ public class BorderManager : NetworkBehaviour
         {
             NotifyOutOfBoundsTargetRpc(conn);
 
-            // Starte 5s Timer
+            // Start 5s Timer
             Coroutine c = StartCoroutine(OutOfBoundsTimer(conn));
             outOfBoundsTimers[conn] = c;
         }
@@ -62,7 +62,7 @@ public class BorderManager : NetworkBehaviour
         {
             NotifyBackInBoundsTargetRpc(conn);
 
-            // Timer abbrechen
+            //break Timer
             if (outOfBoundsTimers.TryGetValue(conn, out Coroutine c))
             {
                 StopCoroutine(c);
@@ -75,14 +75,13 @@ public class BorderManager : NetworkBehaviour
     {
         yield return new WaitForSeconds(outOfBoundsTime);
 
-        // Falls Spieler IMMER NOCH draußen ist
+  
         if (playersOutOfBounds.Contains(conn))
         {
             HandleOutOfBoundsTimeout(conn);
         }
     }
 
-    // ⬇️ HIER deine gewünschte Aktion nach 5 Sekunden
     [Server]
     private void HandleOutOfBoundsTimeout(NetworkConnection conn)
     {
